@@ -457,9 +457,7 @@ display:flex;align-items:center;gap:6px;box-shadow:0 4px 16px rgba(0,0,0,.2)}
     </div>
   </div>
   <div class="catbar" id="catbar"></div>
-  <div class="marea" id="marea">
-    <div class="load-c"><div class="spin"></div><div>&#x0E01;&#x0E33;&#x0E25;&#x0E31;&#x0E07;&#x0E42;&#x0E2B;&#x0E25;&#x0E14;&#x0E40;&#x0E21;&#x0E19;&#x0E39;...</div></div>
-  </div>
+  <div class="marea" id="marea"></div>
 </div>
 
 <button class="fab" onclick="openSheet()">
@@ -848,8 +846,20 @@ function saveSt(){var nm=document.getElementById('st-nm').value.trim();var ct=do
 
 function toast(ic,msg,c){var el=document.getElementById('toasts');var t=document.createElement('div');t.className='ti';var bg=c==='r'?'#C62828':c==='g'?'#2E7D32':'#1B6B3A';t.style.cssText='background:'+bg+';color:#fff';t.textContent=ic+' '+msg;el.appendChild(t);setTimeout(function(){t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},300);},3000);}
 
-// BOOT
-loadMenu();
+// BOOT — แสดงเมนูทันที ไม่รอ API
+menu = FM;
+bCats();
+rMenu();
+rCart();
+// จากนั้นค่อย sync จาก Sheets (background)
+api({action:'getConfig'},function(err,res){if(res&&res.ok&&res.data&&res.data.PIN_DASH)PIN_DASH=String(res.data.PIN_DASH);});
+api({action:'getMenu'},function(err,res){
+  if(res&&res.ok&&res.data&&res.data.length){
+    menu=res.data;
+    bCats();rMenu();
+    setSyncOk(true);
+  }
+});
 </script>
 
 </body>
