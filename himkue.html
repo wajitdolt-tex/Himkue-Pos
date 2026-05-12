@@ -714,21 +714,30 @@ var mnEd=null,stEd=null,scMode={};
 
 // ── API ───────────────────────────────────────
 function api(body,cb){
-  // ใช้ GET สำหรับ read, POST สำหรับ write
-  var readActions=['getMenu','getStock','getOrders','getExpenses','getConfig','ping'];
-  var isRead=readActions.indexOf(body.action)>=0;
-  if(isRead){
-    var qs=Object.keys(body).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(typeof body[k]==='object'?JSON.stringify(body[k]):body[k]);}).join('&');
-    fetch(API+'?'+qs)
-    .then(function(r){return r.json();})
-    .then(function(d){setSyncOk(true);cb(null,d);})
-    .catch(function(e){setSyncOk(false);cb(e,null);});
-  } else {
-    fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)})
-    .then(function(r){return r.json();})
-    .then(function(d){setSyncOk(true);cb(null,d);})
-    .catch(function(e){setSyncOk(false);cb(e,null);});
-  }
+  var qs=Object.keys(body).map(function(k){
+    return encodeURIComponent(k)+'='+encodeURIComponent(
+      typeof body[k]==='object'?JSON.stringify(body[k]):String(body[k])
+    );
+  }).join('&');
+  var url=API+'?'+qs;
+  var done=false;
+  // timeout 6 วินาที
+  var timer=setTimeout(function(){
+    if(!done){done=true;setSyncOk(false);cb(new Error('timeout'),null);}
+  },6000);
+  fetch(url,{redirect:'follow'})
+  .then(function(r){return r.text();})
+  .then(function(t){
+    if(done)return;done=true;clearTimeout(timer);
+    var d=JSON.parse(t);
+    setSyncOk(d.ok!==false);
+    cb(null,d);
+  })
+  .catch(function(e){
+    if(done)return;done=true;clearTimeout(timer);
+    setSyncOk(false);
+    cb(e,null);
+  });
 }
 function setSyncOk(ok){
   var d=document.getElementById('syncDot');
