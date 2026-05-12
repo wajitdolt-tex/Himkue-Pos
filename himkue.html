@@ -39,13 +39,15 @@ border-radius:7px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;flex-
 flex-shrink:0;line-height:1.4;margin-left:auto}
 
 /* BANNER */
-#chBanner{padding:10px 16px;display:flex;align-items:center;justify-content:center;
-gap:10px;border-bottom:1px solid #B8E4C8}
-#chBanner.walkin{background:#FFFCE8}
-#chBanner.lineman{background:#EAFFF3}
-#chBanner.grab{background:#EAFFF9}
-#chBI{font-size:22px}
-#chBN{font-size:15px;font-weight:700;color:#1B6B3A}
+#chBanner{padding:16px 20px;display:flex;flex-direction:column;align-items:center;
+justify-content:center;gap:4px;border-bottom:2px solid #B8E4C8}
+#chBanner.walkin{background:linear-gradient(135deg,#FFFCE8,#FFF8D6)}
+#chBanner.lineman{background:linear-gradient(135deg,#EAFFF3,#D0FFE4)}
+#chBanner.grab{background:linear-gradient(135deg,#EAFFF9,#D0FFF0)}
+#storeName{font-size:22px;font-weight:800;color:#1B6B3A;letter-spacing:1px;margin-bottom:2px}
+#chBannerRow{display:flex;align-items:center;gap:8px}
+#chBI{font-size:18px}
+#chBN{font-size:13px;font-weight:700;color:#2E8B57}
 #chBS{font-size:10px;color:#5A8C6A;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
 
 /* CATBAR */
@@ -288,6 +290,38 @@ font-size:12px;font-weight:700;cursor:pointer;font-family:-apple-system,sans-ser
 .add-btn{padding:7px 12px;background:#2E8B57;color:#fff;border:none;
 border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:-apple-system,sans-serif}
 
+/* SUMMARY BTN + MODAL */
+#sumBtn{position:fixed;bottom:20px;left:14px;z-index:40;
+background:linear-gradient(135deg,#2E8B57,#1B6B3A);color:#fff;
+border:none;border-radius:28px;padding:12px 16px;font-size:13px;font-weight:700;
+cursor:pointer;box-shadow:0 6px 20px rgba(26,107,56,.45);
+display:flex;align-items:center;gap:7px;font-family:-apple-system,sans-serif}
+#sumBtn:active{opacity:.85}
+#sumMod{position:fixed;top:0;right:0;bottom:0;left:0;
+background:rgba(0,0,0,.5);z-index:70;display:none;align-items:flex-end}
+#sumMod.on{display:flex}
+#sumBox{background:#fff;border-radius:22px 22px 0 0;padding:20px;
+width:100%;max-height:85vh;overflow-y:auto;
+box-shadow:0 -6px 28px rgba(26,107,56,.25)}
+.sum-drag{width:38px;height:4px;background:#C8E8CC;border-radius:2px;margin:0 auto 14px}
+.sum-ttl{font-size:16px;font-weight:800;color:#1B6B3A;margin-bottom:14px;text-align:center}
+.sum-row{display:flex;justify-content:space-between;padding:9px 0;
+border-bottom:1px solid #E4F2E8;font-size:13px;color:#1A3528}
+.sum-row:last-child{border-bottom:none}
+.sum-row.big{font-size:18px;font-weight:800;color:#1B6B3A;
+padding-top:12px;border-top:2px solid #B8E4C8;margin-top:4px;border-bottom:none}
+.sum-row.big span{color:#1B6B3A}
+.sum-sec-lbl{color:#5A8C6A;font-size:10px;font-weight:700;text-transform:uppercase;
+letter-spacing:.5px;margin:12px 0 5px}
+.sum-chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.sum-chip{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:700}
+.sum-chip.walkin{background:#D0F0DC;color:#1B6B3A}
+.sum-chip.lineman{background:#E0FFE8;color:#005500}
+.sum-chip.grab{background:#E0FFF5;color:#004433}
+.sum-close{width:100%;margin-top:14px;padding:12px;background:#EEF8F2;
+border:none;border-radius:11px;font-size:13px;font-weight:700;
+color:#1B6B3A;cursor:pointer;font-family:-apple-system,sans-serif}
+
 /* PIN */
 #pinScr{position:fixed;top:0;right:0;bottom:0;left:0;background:linear-gradient(160deg,#0F4D28,#1B6B3A);
 display:none;flex-direction:column;align-items:center;justify-content:center;z-index:999;padding:20px}
@@ -399,8 +433,9 @@ box-shadow:0 4px 14px rgba(0,0,0,.2)}
 
 <div id="vPOS">
   <div id="chBanner" class="walkin">
-    <div id="chBI">🏪</div>
-    <div>
+    <div id="storeName">🍜 ก๋วยเตี๋ยวฮิมคือ</div>
+    <div id="chBannerRow">
+      <div id="chBI">🏪</div>
       <div id="chBN">หน้าร้าน</div>
       <div id="chBS">ราคาปกติ</div>
     </div>
@@ -411,6 +446,19 @@ box-shadow:0 4px 14px rgba(0,0,0,.2)}
 
 <div id="fab" onclick="openSheet()">
   <span>🛒</span><div class="fbn" id="fabn">0</div><span class="fam" id="famt">฿0</span>
+</div>
+
+<button id="sumBtn" onclick="openSum()">📊 ยอดวันนี้</button>
+
+<!-- SUMMARY MODAL -->
+
+<div id="sumMod" onclick="closeSum()">
+  <div id="sumBox" onclick="event.stopPropagation()">
+    <div class="sum-drag"></div>
+    <div class="sum-ttl">📊 สรุปยอดวันนี้</div>
+    <div id="sumContent"></div>
+    <button class="sum-close" onclick="closeSum()">ปิด</button>
+  </div>
 </div>
 
 <div class="ovl" id="sbd" onclick="closeSheet()"></div>
@@ -437,8 +485,7 @@ box-shadow:0 4px 14px rgba(0,0,0,.2)}
 <div id="pkbox">
   <div class="pkh"></div>
   <div class="pk-meta"><div class="pk-em" id="pkEm"></div><div><div class="pk-nm" id="pkNm"></div><div class="pk-pr" id="pkPr"></div></div></div>
-  <div class="pk-sec"><div class="pk-lb">ชนิดเส้น</div><div class="pkopts" id="nOpts"></div></div>
-  <div class="pk-sec" id="bSec"><div class="pk-lb">น้ำ / แห้ง</div><div class="pkopts" id="bOpts"></div></div>
+  <div id="pkOpts"></div>
   <button class="pk-add" onclick="confirmPK()">🛒 เพิ่มลงตะกร้า</button>
   <button class="pk-can" onclick="closePK()">ยกเลิก</button>
 </div>
@@ -517,6 +564,39 @@ box-shadow:0 4px 14px rgba(0,0,0,.2)}
 var NL=['เส้นใหญ่','เส้นเล็ก','เส้นหมี่','วุ้นเส้น','มาม่า'];
 var BL=['น้ำ','น้ำตก','แห้ง','ผัด'];
 var NC=['khaosoi','noodle','set'];
+
+// ตัวเลือกแยกตามหมวด: [{name, type:'radio'|'check', extra:฿, opts:[]}]
+var CAT_OPTS={
+  khaosoi:[
+    {name:'ข้าวซอยพิเศษ',type:'radio',required:true,opts:[{lb:'ธรรมดา',ex:0},{lb:'พิเศษ',ex:20},{lb:'จัมโบ้',ex:50}]},
+    {name:'เพิ่มน่องไก่',type:'check',required:false,opts:[{lb:'น่องไก่',ex:19}]},
+    {name:'รายการเสริม',type:'check',required:false,opts:[{lb:'ถ้วยพลาสติก ช้อน ตะเกียบ',ex:9},{lb:'ผักสด',ex:10},{lb:'เกี๊ยวทอด',ex:10},{lb:'แคบหมู',ex:10},{lb:'น้ำเปล่า',ex:15},{lb:'น้ำแข็ง',ex:10}]},
+    {name:'ตัวเลือกเสริมข้าวซอย',type:'check',required:false,opts:[{lb:'เพิ่มเส้น',ex:10},{lb:'เพิ่มเลือดไก่นิ่ม 3-4ก้อน',ex:10},{lb:'เพิ่มเส้นกรอบข้าวซอย',ex:10}]}
+  ],
+  noodle:[
+    {name:'เส้น',type:'radio',required:true,opts:[{lb:'เส้นใหญ่',ex:0},{lb:'เส้นเล็ก',ex:0},{lb:'เส้นหมี่',ex:0},{lb:'วุ้นเส้น',ex:0},{lb:'มาม่า',ex:0},{lb:'เส้นบะหมี่ขาว',ex:0},{lb:'บะหมี่เหลืองสด',ex:0}]},
+    {name:'น้ำซุปก๋วยเตี๋ยว',type:'radio',required:true,opts:[{lb:'น้ำใส',ex:0},{lb:'น้ำตก',ex:0},{lb:'แห้ง (กรุณาระบุรายละเอียด)',ex:0}]},
+    {name:'ปริมาณ',type:'radio',required:true,opts:[{lb:'ธรรมดา',ex:0},{lb:'พิเศษ',ex:15}]},
+    {name:'รายการเสริม',type:'check',required:false,opts:[{lb:'ถ้วยพลาสติก ช้อน ตะเกียบ',ex:9},{lb:'ผักสด',ex:10},{lb:'เกี๊ยวทอด',ex:10},{lb:'แคบหมู',ex:10},{lb:'น้ำเปล่า',ex:15},{lb:'น้ำแข็ง',ex:10}]},
+    {name:'เพิ่มเส้น',type:'check',required:false,opts:[{lb:'เพิ่มเส้น',ex:10},{lb:'เพิ่มมาม่า 1ห่อ',ex:15}]}
+  ],
+  luak:[
+    {name:'น้ำจิ้ม',type:'radio',required:true,opts:[{lb:'ไม่รับน้ำจิ้ม',ex:0},{lb:'น้ำจิ้มเผ็ด',ex:0},{lb:'น้ำจิ้มไก่',ex:0},{lb:'น้ำจิ้มเผ็ด+น้ำจิ้มไก่',ex:5}]},
+    {name:'เครื่องเคียง ลวกจิ้ม',type:'check',required:false,opts:[{lb:'ไม่ต้องลวกลูกชิ้น',ex:0},{lb:'ไม่รับผักสด',ex:0},{lb:'ผักสด (กะหล่ำ+ผักชี)',ex:5}]}
+  ]
+};
+
+// ท็อปปิ้งเฉพาะเมนู (id)
+var MENU_OPTS={
+  5:[{name:'ท็อปปิ้ง หมู',type:'check',required:false,opts:[{lb:'รวมหมู',ex:0},{lb:'หมูตุ๋น',ex:0},{lb:'หมูนุ่ม',ex:0},{lb:'หมูสับ',ex:0},{lb:'ลูกชิ้นหมู',ex:0},{lb:'เครื่องในหมู',ex:0}]}],
+  6:[{name:'ท็อปปิ้ง เนื้อควาย',type:'check',required:false,opts:[{lb:'รวมเนื้อ',ex:0},{lb:'เนื้อเปื่อย',ex:0},{lb:'เนื้อสด',ex:0},{lb:'สะไบนาง',ex:0},{lb:'ลูกชิ้นเนื้อ',ex:0}]},
+     {name:'น้ำซุปต้มยำ',type:'radio',required:true,opts:[{lb:'ต้มยำน้ำใส',ex:0},{lb:'ต้มยำน้ำตก',ex:0}]}],
+  7:[{name:'น้ำซุปเย็นตาโฟ',type:'radio',required:true,opts:[{lb:'เย็นตาโฟน้ำใส',ex:0},{lb:'เย็นตาโฟต้มยำ',ex:5}]}],
+  8:[{name:'เนื้อสัตว์',type:'radio',required:true,opts:[{lb:'รวมหมู',ex:0},{lb:'รวมเนื้อ',ex:0}]},
+     {name:'น้ำซุปต้มยำ',type:'radio',required:true,opts:[{lb:'ต้มยำน้ำใส',ex:0},{lb:'ต้มยำน้ำตก',ex:0}]}],
+  9:[{name:'น้ำซุป เกาเหลา',type:'radio',required:true,opts:[{lb:'น้ำใส',ex:0},{lb:'น้ำตก',ex:0},{lb:'ต้มยำ น้ำใส',ex:5},{lb:'ต้มยำ น้ำตก',ex:5},{lb:'โฟยำ (กรณีที่ลูกค้าเลือกเย็นตาโฟ)',ex:5}]},
+     {name:'เนื้อสัตว์ เกาเหลา',type:'radio',required:true,opts:[{lb:'รวมหมู',ex:0},{lb:'รวมเนื้อ',ex:0},{lb:'เย็นตาโฟ',ex:9}]}]
+};
 var CATS=[{id:'all',lb:'ทั้งหมด'},{id:'khaosoi',lb:'ข้าวซอย'},{id:'noodle',lb:'ก๋วยเตี๋ยว'},{id:'luak',lb:'ลวกจิ้ม'},{id:'side',lb:'เครื่องเคียง'},{id:'drink',lb:'เครื่องดื่ม'},{id:'set',lb:'เซต'},{id:'custom',lb:'อื่นๆ'}];
 var CHI={walkin:{lb:'หน้าร้าน',icon:'🏪',sub:'ราคาปกติ'},lineman:{lb:'LINE MAN',icon:'🟢',sub:'ราคาออนไลน์'},grab:{lb:'Grab',icon:'🟢',sub:'ราคาออนไลน์'}};
 var FM=[
@@ -546,7 +626,7 @@ var FM=[
 /* STATE */
 var menu,stock,orders,expenses;
 var cart=[],pay='cash',activeCat='all',ch='walkin';
-var pkId=null,pkN=NL[0],pkB=BL[0];
+var pkId=null,pkN=NL[0],pkB=BL[0],pkOpts={};
 var ordNo,PIN='9999',pinBuf='';
 var isDash=false,period='day',activeDV='overview';
 var mnEd=null,stEd=null,scMode={};
@@ -693,15 +773,79 @@ function openSheet(){document.getElementById('sbd').classList.add('on');document
 function closeSheet(){document.getElementById('sbd').classList.remove('on');document.getElementById('sheet').classList.remove('on');}
 
 /* PICKER */
-function bPK(){
-  var nh='';NL.forEach(function(n){nh+='<div class="popt'+(pkN===n?' on':'')+'" onclick="selN(this,\''+n+'\')">'+n+'</div>';});document.getElementById('nOpts').innerHTML=nh;
-  var bh='';BL.forEach(function(b){bh+='<div class="popt'+(pkB===b?' on':'')+'" onclick="selB(this,\''+b+'\')">'+b+'</div>';});document.getElementById('bOpts').innerHTML=bh;
+function openPK(m){
+  pkId=m.id;pkOpts={};
+  document.getElementById('pkEm').textContent=m.emoji;
+  document.getElementById('pkNm').textContent=m.name;
+  document.getElementById('pkPr').textContent='฿'+gp(m);
+  // รวม options: หมวดหมู่ + เฉพาะเมนู
+  var opts=(CAT_OPTS[m.cat]||[]).concat(MENU_OPTS[m.id]||[]);
+  var h='';
+  opts.forEach(function(sec,si){
+    h+='<div class="pk-sec"><div class="pk-lb">'+sec.name+(sec.required?' <span style="color:#C0392B;font-size:9px">(ต้องเลือก)</span>':'')+'</div><div class="pkopts">';
+    sec.opts.forEach(function(opt,oi){
+      var key='s'+si+'o'+oi;
+      if(sec.type==='radio'){
+        var checked=(si===0&&oi===0)?true:false;
+        if(checked)pkOpts[key]={sec:si,oi:oi,lb:opt.lb,ex:opt.ex,type:'radio',secName:sec.name};
+        h+='<div class="popt'+(checked?' on':'')+'" onclick="selOpt(this,\''+key+'\','+si+','+oi+',\'radio\',\''+sec.name.replace(/'/g,'')+'\',\''+opt.lb.replace(/'/g,'')+'\','+opt.ex+')">'+opt.lb+(opt.ex>0?' +฿'+opt.ex:'')+'</div>';
+      } else {
+        h+='<div class="popt" onclick="togOpt(this,\''+key+'\','+si+','+oi+',\''+sec.name.replace(/'/g,'')+'\',\''+opt.lb.replace(/'/g,'')+'\','+opt.ex+')">'+opt.lb+(opt.ex>0?' +฿'+opt.ex:'')+'</div>';
+      }
+    });
+    h+='</div></div>';
+  });
+  // ถ้าไม่มี option แสดง section เดิม (เส้น+น้ำ/แห้ง)
+  if(!opts.length){
+    h='<div class="pk-sec"><div class="pk-lb">ชนิดเส้น</div><div class="pkopts">';
+    NL.forEach(function(n){h+='<div class="popt'+(n===NL[0]?' on':'')+'" onclick="selN(this,\''+n+'\')">'+n+'</div>';});
+    h+='</div></div>';
+    if(m.cat!=='khaosoi'){
+      h+='<div class="pk-sec"><div class="pk-lb">น้ำ / แห้ง</div><div class="pkopts">';
+      BL.forEach(function(b){h+='<div class="popt'+(b===BL[0]?' on':'')+'" onclick="selB(this,\''+b+'\')">'+b+'</div>';});
+      h+='</div></div>';
+    }
+  }
+  document.getElementById('pkOpts').innerHTML=h;
+  document.getElementById('pkbd').classList.add('on');
+  document.getElementById('pkbox').classList.add('on');
 }
-function openPK(m){pkId=m.id;pkN=NL[0];pkB=BL[0];document.getElementById('pkEm').textContent=m.emoji;document.getElementById('pkNm').textContent=m.name;document.getElementById('pkPr').textContent='฿'+gp(m);document.getElementById('bSec').style.display=m.cat==='khaosoi'?'none':'';bPK();document.getElementById('pkbd').classList.add('on');document.getElementById('pkbox').classList.add('on');}
-function closePK(){document.getElementById('pkbd').classList.remove('on');document.getElementById('pkbox').classList.remove('on');}
+function selOpt(el,key,si,oi,type,secName,lb,ex){
+  // deselect อื่นใน section เดียวกัน
+  Object.keys(pkOpts).forEach(function(k){if(pkOpts[k].sec===si&&pkOpts[k].type==='radio')delete pkOpts[k];});
+  pkOpts[key]={sec:si,oi:oi,lb:lb,ex:ex,type:'radio',secName:secName};
+  // update UI ใน section นี้
+  el.parentNode.querySelectorAll('.popt').forEach(function(o){o.classList.remove('on');});
+  el.classList.add('on');
+}
+function togOpt(el,key,si,oi,secName,lb,ex){
+  if(pkOpts[key]){delete pkOpts[key];el.classList.remove('on');}
+  else{pkOpts[key]={sec:si,oi:oi,lb:lb,ex:ex,type:'check',secName:secName};el.classList.add('on');}
+}
 function selN(el,v){pkN=v;document.querySelectorAll('#nOpts .popt').forEach(function(o){o.classList.toggle('on',o.textContent===v);});}
 function selB(el,v){pkB=v;document.querySelectorAll('#bOpts .popt').forEach(function(o){o.classList.toggle('on',o.textContent===v);});}
-function confirmPK(){var m=null;menu.forEach(function(x){if(x.id==pkId)m=x;});if(!m)return;pushCart(m,pkN,m.cat==='khaosoi'?'':pkB);closePK();}
+function closePK(){document.getElementById('pkbd').classList.remove('on');document.getElementById('pkbox').classList.remove('on');}
+function confirmPK(){
+  var m=null;menu.forEach(function(x){if(x.id==pkId)m=x;});if(!m)return;
+  var opts=(CAT_OPTS[m.cat]||[]).concat(MENU_OPTS[m.id]||[]);
+  if(opts.length){
+    // สร้าง subtitle จาก options ที่เลือก
+    var parts=[];var extraTotal=0;
+    Object.keys(pkOpts).sort().forEach(function(k){var o=pkOpts[k];parts.push(o.lb);extraTotal+=o.ex;});
+    var sb=parts.join(', ');
+    pushCartEx(m,sb,extraTotal);
+  } else {
+    pushCart(m,pkN,m.cat==='khaosoi'?'':pkB);
+  }
+  closePK();
+}
+function pushCartEx(m,sb,extra){
+  var pr=gp(m)+extra;
+  var ex=null;cart.forEach(function(c){if(c.mid==m.id&&c.sb===sb)ex=c;});
+  if(ex){ex.qty++;}
+  else{cart.push({k:Date.now()+Math.random(),mid:m.id,nm:m.name,em:m.emoji,pr:pr,qty:1,ok:sb,sb:sb});}
+  rCart();
+}
 
 /* ORDER */
 function confirmOrder(){
@@ -891,6 +1035,37 @@ function saveSt(){
   else{stock.push({id:'sx'+Date.now(),name:nm,cat:ct,emoji:em,qty:q,min:mn2,max:mx,unit:u});}
   lsS('stock',stock);toast('✅','บันทึกแล้ว','g');closeStMod();rSD();
 }
+
+/* SUMMARY */
+function openSum(){
+  var today=new Date().toISOString().slice(0,10);
+  var os=orders.filter(function(o){return o.date===today;});
+  var tot=0,cnt=os.length,wt=0,lt=0,gt=0;
+  var topMap={};
+  os.forEach(function(o){
+    tot+=o.total;
+    if(o.channel==='walkin')wt+=o.total;
+    else if(o.channel==='lineman')lt+=o.total;
+    else if(o.channel==='grab')gt+=o.total;
+    o.items.forEach(function(it){if(!topMap[it.name])topMap[it.name]=0;topMap[it.name]+=it.qty;});
+  });
+  var avg=cnt?Math.round(tot/cnt):0;
+  var top=Object.keys(topMap).map(function(k){return{nm:k,qty:topMap[k]};}).sort(function(a,b){return b.qty-a.qty;}).slice(0,5);
+  var md=['🥇','🥈','🥉','4️⃣','5️⃣'];
+  var h='<div class="sum-row big"><span>ยอดรวมวันนี้</span><span>฿'+tot.toLocaleString()+'</span></div>';
+  h+='<div class="sum-row"><span>ออเดอร์</span><span style="font-weight:700">'+cnt+' ออเดอร์</span></div>';
+  h+='<div class="sum-row"><span>เฉลี่ย/ออเดอร์</span><span style="font-weight:700">฿'+avg+'</span></div>';
+  h+='<div class="sum-sec-lbl">แยกช่องทาง</div><div class="sum-chips">';
+  if(wt)h+='<div class="sum-chip walkin">🏪 หน้าร้าน ฿'+wt.toLocaleString()+'</div>';
+  if(lt)h+='<div class="sum-chip lineman">🟢 LINE MAN ฿'+lt.toLocaleString()+'</div>';
+  if(gt)h+='<div class="sum-chip grab">🟢 Grab ฿'+gt.toLocaleString()+'</div>';
+  if(!cnt)h+='<div style="font-size:12px;color:#7A9A82">ยังไม่มีออเดอร์วันนี้</div>';
+  h+='</div>';
+  if(top.length){h+='<div class="sum-sec-lbl">ขายดีวันนี้</div>';top.forEach(function(t,i){h+='<div class="sum-row"><span>'+md[i]+' '+t.nm+'</span><span style="font-weight:700;color:#1B6B3A">x'+t.qty+'</span></div>';});}
+  document.getElementById('sumContent').innerHTML=h;
+  document.getElementById('sumMod').classList.add('on');
+}
+function closeSum(){document.getElementById('sumMod').classList.remove('on');}
 
 /* TOAST */
 function toast(ic,msg,c){
