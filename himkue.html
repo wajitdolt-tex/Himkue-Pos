@@ -19,7 +19,7 @@
   --wh:#ffffff;--lm:#00B900;--grab:#00B14F;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:'Sarabun',sans-serif;background:var(--cream);color:var(--bdk);overflow-x:hidden}
+body{font-family:'Sarabun',sans-serif;background:#FDF6EC;color:#2C1810;overflow-x:hidden}
 
 /* ── PIN SCREEN (Dashboard only) ────────── */
 .pin-scr{position:fixed;top:0;right:0;bottom:0;left:0;
@@ -735,14 +735,13 @@ setInterval(function(){
 },1000);
 
 // ── BOOT: เปิดหน้าขายทันทีโดยไม่ต้องใส่ PIN ──
-window.onload = function(){
+document.addEventListener('DOMContentLoaded', function(){
   showPOS();
   loadMenu();
-  // load config to sync PINs
   api({action:'getConfig'},function(err,res){
     if(res&&res.ok&&res.data&&res.data.PIN_DASH) PIN_DASH=String(res.data.PIN_DASH);
   });
-};
+});
 
 // ── DASHBOARD PIN ─────────────────────────────
 function openDashPin(){
@@ -794,6 +793,7 @@ function showPOS(){
   document.getElementById('modeBtn').textContent='\ud83d\udcca Dashboard';
   var pos=document.getElementById('vPOS');
   pos.style.display='flex';
+  pos.style.flexDirection='column';
   document.getElementById('fab').style.display='flex';
   var dvs=document.querySelectorAll('.dv');
   for(var i=0;i<dvs.length;i++) dvs[i].classList.remove('on');
