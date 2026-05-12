@@ -463,7 +463,7 @@ display:flex;align-items:center;gap:5px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
 
 <!-- ════ POS VIEW ════ -->
 
-<div id="vPOS" style="display:none;flex-direction:column;height:calc(100vh - 54px)">
+<div id="vPOS" style="display:flex;flex-direction:column;height:calc(100vh - 54px)">
   <div class="ch-banner walkin" id="chBanner">
     <span id="chBannerTxt">&#x1F3EA; &#x0E2B;&#x0E19;&#x0E49;&#x0E32;&#x0E23;&#x0E49;&#x0E32;&#x0E19; &mdash; &#x0E23;&#x0E32;&#x0E04;&#x0E32;&#x0E1B;&#x0E01;&#x0E15;&#x0E34;</span>
   </div>
@@ -475,7 +475,7 @@ display:flex;align-items:center;gap:5px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
 
 <!-- FAB -->
 
-<button class="fab" id="fab" onclick="openSheet()" style="display:none">
+<button class="fab" id="fab" onclick="openSheet()">
   <span>&#x1F6D2;</span>
   <div class="fbn" id="fabn">0</div>
   <span class="fam" id="famt">&#x0E3F;0</span>
@@ -745,14 +745,9 @@ setInterval(function(){
   }catch(e){}
 },1000);
 
-// ── BOOT: เปิดหน้าขายทันทีโดยไม่ต้องใส่ PIN ──
-document.addEventListener('DOMContentLoaded', function(){
-  showPOS();
-  loadMenu();
-  api({action:'getConfig'},function(err,res){
-    if(res&&res.ok&&res.data&&res.data.PIN_DASH) PIN_DASH=String(res.data.PIN_DASH);
-  });
-});
+// ── BOOT ──────────────────────────────────────
+// Script อยู่ท้าย body แล้ว DOM พร้อมแน่นอน
+loadMenu();
 
 // ── DASHBOARD PIN ─────────────────────────────
 function openDashPin(){
@@ -802,9 +797,8 @@ function showPOS(){
   document.getElementById('hSub').textContent=CHI[channel].lb;
   document.getElementById('modeBtn').onclick=openDashPin;
   document.getElementById('modeBtn').textContent='\ud83d\udcca Dashboard';
-  var pos=document.getElementById('vPOS');
-  pos.style.display='flex';
-  pos.style.flexDirection='column';
+  document.getElementById('vPOS').style.display='flex';
+  document.getElementById('vPOS').style.flexDirection='column';
   document.getElementById('fab').style.display='flex';
   var dvs=document.querySelectorAll('.dv');
   for(var i=0;i<dvs.length;i++) dvs[i].classList.remove('on');
@@ -823,18 +817,40 @@ function showDash(){
 }
 
 // ── POS: LOAD ─────────────────────────────────
+var FALLBACK_MENU=[
+  {id:1,cat:'khaosoi',name:'\u0e02\u0e49\u0e32\u0e27\u0e0b\u0e2d\u0e22\u0e44\u0e01\u0e48',price:69,priceOnline:79,cost:35,emoji:'\ud83c\udf57',desc:''},
+  {id:2,cat:'khaosoi',name:'\u0e02\u0e49\u0e32\u0e27\u0e0b\u0e2d\u0e22\u0e2b\u0e21\u0e39',price:75,priceOnline:85,cost:38,emoji:'\ud83d\udc37',desc:''},
+  {id:3,cat:'khaosoi',name:'\u0e02\u0e49\u0e32\u0e27\u0e0b\u0e2d\u0e22\u0e40\u0e19\u0e37\u0e49\u0e2d',price:75,priceOnline:85,cost:42,emoji:'\ud83e\udd69',desc:''},
+  {id:4,cat:'khaosoi',name:'\u0e02\u0e49\u0e32\u0e27\u0e0b\u0e2d\u0e22\u0e23\u0e27\u0e21',price:89,priceOnline:99,cost:50,emoji:'\ud83c\udf72',desc:''},
+  {id:5,cat:'noodle',name:'\u0e01\u0e4b\u0e27\u0e22\u0e40\u0e15\u0e35\u0e4b\u0e22\u0e27\u0e2b\u0e21\u0e39',price:65,priceOnline:75,cost:30,emoji:'\ud83d\udc37',desc:''},
+  {id:6,cat:'noodle',name:'\u0e01\u0e4b\u0e27\u0e22\u0e40\u0e15\u0e35\u0e4b\u0e22\u0e27\u0e40\u0e19\u0e37\u0e49\u0e2d',price:69,priceOnline:79,cost:36,emoji:'\ud83e\udd69',desc:''},
+  {id:7,cat:'noodle',name:'\u0e40\u0e22\u0e47\u0e19\u0e15\u0e32\u0e42\u0e1f',price:69,priceOnline:79,cost:33,emoji:'\ud83e\udd91',desc:''},
+  {id:8,cat:'noodle',name:'\u0e15\u0e49\u0e21\u0e22\u0e33',price:69,priceOnline:79,cost:30,emoji:'\ud83d\udd25',desc:''},
+  {id:9,cat:'noodle',name:'\u0e40\u0e01\u0e32\u0e40\u0e2b\u0e25\u0e32',price:59,priceOnline:69,cost:28,emoji:'\ud83e\udd63',desc:''},
+  {id:10,cat:'luak',name:'\u0e25\u0e39\u0e01\u0e0a\u0e34\u0e49\u0e19\u0e1b\u0e25\u0e32',price:55,priceOnline:65,cost:25,emoji:'\ud83d\udc1f',desc:''},
+  {id:11,cat:'luak',name:'\u0e25\u0e39\u0e01\u0e0a\u0e34\u0e49\u0e19\u0e2b\u0e21\u0e39',price:55,priceOnline:65,cost:24,emoji:'\ud83d\udc37',desc:''},
+  {id:12,cat:'luak',name:'\u0e25\u0e39\u0e01\u0e0a\u0e34\u0e49\u0e19\u0e40\u0e19\u0e37\u0e49\u0e2d',price:55,priceOnline:65,cost:27,emoji:'\ud83e\udd69',desc:''},
+  {id:13,cat:'luak',name:'\u0e25\u0e39\u0e01\u0e0a\u0e34\u0e49\u0e19\u0e23\u0e27\u0e21',price:55,priceOnline:65,cost:26,emoji:'\ud83c\udf61',desc:''},
+  {id:14,cat:'side',name:'\u0e1c\u0e31\u0e01\u0e2a\u0e14',price:8,priceOnline:10,cost:3,emoji:'\ud83e\udd6c',desc:''},
+  {id:15,cat:'side',name:'\u0e1e\u0e23\u0e34\u0e01\u0e19\u0e49\u0e33\u0e21\u0e31\u0e19',price:10,priceOnline:15,cost:4,emoji:'\ud83c\udf36',desc:''},
+  {id:16,cat:'side',name:'\u0e41\u0e04\u0e1a\u0e2b\u0e21\u0e39',price:10,priceOnline:15,cost:5,emoji:'\ud83c\udf56',desc:''},
+  {id:17,cat:'side',name:'\u0e40\u0e01\u0e35\u0e4b\u0e22\u0e27\u0e17\u0e2d\u0e14',price:10,priceOnline:15,cost:4,emoji:'\ud83e\udd5f',desc:''},
+  {id:18,cat:'drink',name:'\u0e19\u0e49\u0e33\u0e40\u0e1b\u0e25\u0e48\u0e32',price:15,priceOnline:20,cost:7,emoji:'\ud83d\udca7',desc:''},
+  {id:19,cat:'drink',name:'\u0e19\u0e49\u0e33\u0e41\u0e02\u0e47\u0e07',price:10,priceOnline:15,cost:3,emoji:'\ud83e\uddca',desc:''},
+  {id:20,cat:'drink',name:'\u0e42\u0e04\u0e49\u0e01',price:20,priceOnline:25,cost:10,emoji:'\ud83e\udd64',desc:''},
+  {id:21,cat:'set',name:'\u0e40\u0e0b\u0e15 \u0e40\u0e19\u0e37\u0e49\u0e2d+\u0e2b\u0e21\u0e39+\u0e25\u0e39\u0e01\u0e0a\u0e34\u0e49\u0e19',price:160,priceOnline:185,cost:85,emoji:'\ud83c\udf81',desc:''}
+];
+
 function loadMenu(){
-  // load config to get PINs
   api({action:'getConfig'},function(err,res){
-    if(res&&res.ok&&res.data){
-      
-      if(res.data.PIN_DASH) PIN_DASH = String(res.data.PIN_DASH);
-    }
+    if(res&&res.ok&&res.data&&res.data.PIN_DASH) PIN_DASH=String(res.data.PIN_DASH);
   });
   api({action:'getMenu'},function(err,res){
-    if(err||!res||!res.ok){
-      document.getElementById('marea').innerHTML=
-        '<div class="load-c"><div style="color:var(--red)">\u26a0\ufe0f \u0e42\u0e2b\u0e25\u0e14\u0e40\u0e21\u0e19\u0e39\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49<br><small>\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a URL \u0e02\u0e2d\u0e07 Apps Script</small></div></div>';
+    if(err||!res||!res.ok||!(res.data&&res.data.length)){
+      // ใช้ข้อมูลสำรองถ้า API ไม่ตอบ
+      menu=FALLBACK_MENU;
+      bCats(); rMenu(); rCart();
+      setSyncOk(false);
       return;
     }
     menu=res.data||[];
