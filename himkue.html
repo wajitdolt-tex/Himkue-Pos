@@ -43,7 +43,7 @@ color:#fff;font-family:‘Chakra Petch’,sans-serif;font-size:22px;font-weight:
 .pin-switch{margin-top:20px;color:rgba(255,255,255,.5);font-size:12px;cursor:pointer;text-decoration:underline}
 
 /* ── HEADER ─────────────────────────────── */
-.hdr{background:linear-gradient(135deg,var(–bdk),var(–bmd));height:54px;
+.hdr{background:linear-gradient(135deg,var(–bdk),var(–bmd));height:56px;
 display:flex;align-items:center;padding:0 12px;
 position:sticky;top:0;z-index:50;box-shadow:0 4px 16px rgba(0,0,0,.25);gap:6px}
 .brand{display:flex;align-items:center;gap:8px;flex-shrink:0}
@@ -51,25 +51,28 @@ position:sticky;top:0;z-index:50;box-shadow:0 4px 16px rgba(0,0,0,.25);gap:6px}
 display:flex;align-items:center;justify-content:center;font-size:17px}
 .bnm{font-family:‘Chakra Petch’,sans-serif;color:#fff;font-size:14px;font-weight:700;line-height:1.2}
 .bsb{color:var(–goldl);font-size:10px}
-/* channel switcher (POS only) */
-.ch-row{display:flex;gap:3px;background:rgba(255,255,255,.1);border-radius:9px;padding:3px;flex-shrink:0}
-.chb{padding:5px 8px;border:none;border-radius:6px;cursor:pointer;
+/* channel switcher — centered */
+.ch-row{display:flex;gap:4px;background:rgba(255,255,255,.12);
+border-radius:10px;padding:4px;flex:1;justify-content:center;margin:0 6px}
+.chb{flex:1;padding:6px 4px;border:none;border-radius:7px;cursor:pointer;
 font-family:‘Sarabun’,sans-serif;font-size:11px;font-weight:700;
-color:rgba(255,255,255,.7);background:transparent;white-space:nowrap}
+color:rgba(255,255,255,.7);background:transparent;white-space:nowrap;
+text-align:center;max-width:100px}
 .chb.on.walkin{background:var(–gold);color:var(–bdk)}
 .chb.on.lineman{background:var(–lm);color:#fff}
 .chb.on.grab{background:var(–grab);color:#fff}
-/* dashboard nav (Dash only) */
-.dnav{display:flex;gap:3px;overflow-x:auto;flex:1;margin:0 6px;scrollbar-width:none}
+/* dashboard nav */
+.dnav{display:flex;gap:3px;overflow-x:auto;flex:1;margin:0 6px;
+scrollbar-width:none;justify-content:center}
 .dnav::-webkit-scrollbar{display:none}
-.dnb{padding:5px 10px;border:none;border-radius:7px;cursor:pointer;
+.dnb{padding:6px 12px;border:none;border-radius:7px;cursor:pointer;
 font-family:‘Sarabun’,sans-serif;font-size:11px;font-weight:700;
 white-space:nowrap;flex-shrink:0;
 background:rgba(255,255,255,.12);color:rgba(255,255,255,.8)}
 .dnb.on{background:var(–gold);color:var(–bdk)}
 /* shared */
-.mode-btn{padding:5px 9px;background:rgba(255,255,255,.15);border:none;
-border-radius:7px;color:#fff;font-family:‘Sarabun’,sans-serif;
+.mode-btn{padding:6px 10px;background:rgba(255,255,255,.15);border:none;
+border-radius:8px;color:#fff;font-family:‘Sarabun’,sans-serif;
 font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
 .sync-dot{width:8px;height:8px;border-radius:50%;background:#888;flex-shrink:0}
 .sync-dot.ok{background:var(–grn)}.sync-dot.err{background:var(–red)}
@@ -77,11 +80,24 @@ font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
 text-align:right;flex-shrink:0;line-height:1.4;margin-left:auto}
 
 /* ── POS VIEW ───────────────────────────── */
-.ch-banner{padding:6px 14px;font-size:11px;font-weight:700;
-border-bottom:2px solid;display:flex;align-items:center;gap:6px;flex-shrink:0}
-.ch-banner.walkin{background:var(–goldp);border-color:var(–gold);color:var(–bmd)}
-.ch-banner.lineman{background:#F0FFF0;border-color:var(–lm);color:#005500}
-.ch-banner.grab{background:#F0FFF5;border-color:var(–grab);color:#004422}
+/* Channel Banner — redesigned */
+.ch-banner{padding:10px 16px;border-bottom:none;
+display:flex;align-items:center;justify-content:center;gap:8px;
+flex-shrink:0;position:relative}
+.ch-banner.walkin{background:linear-gradient(135deg,#FFF8E8,#FFF0CC)}
+.ch-banner.lineman{background:linear-gradient(135deg,#E8FFF0,#D0FFE4)}
+.ch-banner.grab{background:linear-gradient(135deg,#E8FFF5,#D0FFE8)}
+.ch-banner-icon{font-size:20px}
+.ch-banner-text{display:flex;flex-direction:column;align-items:center;gap:1px}
+.ch-banner-title{font-family:‘Chakra Petch’,sans-serif;font-size:14px;font-weight:700;color:var(–bdk)}
+.ch-banner-sub{font-size:10px;color:var(–blt);font-weight:600;letter-spacing:.5px}
+.ch-banner-line{position:absolute;bottom:0;left:16px;right:16px;height:2px;border-radius:2px;opacity:.3}
+.ch-banner.walkin .ch-banner-title{color:var(–bmd)}
+.ch-banner.walkin .ch-banner-line{background:var(–gold)}
+.ch-banner.lineman .ch-banner-title{color:#005500}
+.ch-banner.lineman .ch-banner-line{background:var(–lm)}
+.ch-banner.grab .ch-banner-title{color:#004422}
+.ch-banner.grab .ch-banner-line{background:var(–grab)}
 .catbar{display:flex;gap:5px;overflow-x:auto;padding:9px 12px 5px;
 scrollbar-width:none;position:sticky;top:0;background:var(–cream);z-index:10;flex-shrink:0}
 .catbar::-webkit-scrollbar{display:none}
@@ -465,7 +481,12 @@ display:flex;align-items:center;gap:5px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
 
 <div id="vPOS" style="display:flex;flex-direction:column;height:calc(100vh - 54px)">
   <div class="ch-banner walkin" id="chBanner">
-    <span id="chBannerTxt">&#x1F3EA; &#x0E2B;&#x0E19;&#x0E49;&#x0E32;&#x0E23;&#x0E49;&#x0E32;&#x0E19; &mdash; &#x0E23;&#x0E32;&#x0E04;&#x0E32;&#x0E1B;&#x0E01;&#x0E15;&#x0E34;</span>
+    <div class="ch-banner-icon" id="chBannerIcon">&#x1F3EA;</div>
+    <div class="ch-banner-text">
+      <div class="ch-banner-title" id="chBannerTitle">&#x0E2B;&#x0E19;&#x0E49;&#x0E32;&#x0E23;&#x0E49;&#x0E32;&#x0E19;</div>
+      <div class="ch-banner-sub" id="chBannerSub">&#x0E23;&#x0E32;&#x0E04;&#x0E32;&#x0E1B;&#x0E01;&#x0E15;&#x0E34;</div>
+    </div>
+    <div class="ch-banner-line"></div>
   </div>
   <div class="catbar" id="catbar"></div>
   <div class="marea" id="marea">
@@ -697,9 +718,9 @@ var CATS = [
   {id:'custom',lb:'\u0e2d\u0e37\u0e48\u0e19\u0e46'}
 ];
 var CHI = {
-  walkin:{lb:'\u0e2b\u0e19\u0e49\u0e32\u0e23\u0e49\u0e32\u0e19',txt:'\ud83c\udfe2 \u0e2b\u0e19\u0e49\u0e32\u0e23\u0e49\u0e32\u0e19 \u2014 \u0e23\u0e32\u0e04\u0e32\u0e1b\u0e01\u0e15\u0e34'},
-  lineman:{lb:'LINE MAN',txt:'\ud83d\udfe2 LINE MAN \u2014 \u0e23\u0e32\u0e04\u0e32\u0e2d\u0e2d\u0e19\u0e44\u0e25\u0e19\u0e4c'},
-  grab:{lb:'Grab',txt:'\ud83d\udfe2 Grab \u2014 \u0e23\u0e32\u0e04\u0e32\u0e2d\u0e2d\u0e19\u0e44\u0e25\u0e19\u0e4c'}
+  walkin:{lb:'\u0e2b\u0e19\u0e49\u0e32\u0e23\u0e49\u0e32\u0e19',icon:'\ud83c\udfe2',sub:'\u0e23\u0e32\u0e04\u0e32\u0e1b\u0e01\u0e15\u0e34'},
+  lineman:{lb:'LINE MAN',icon:'\ud83d\udfe2',sub:'\u0e23\u0e32\u0e04\u0e32\u0e2d\u0e2d\u0e19\u0e44\u0e25\u0e19\u0e4c'},
+  grab:{lb:'Grab',icon:'\ud83d\udfe2',sub:'\u0e23\u0e32\u0e04\u0e32\u0e2d\u0e2d\u0e19\u0e44\u0e25\u0e19\u0e4c'}
 };
 
 // ── STATE ─────────────────────────────────────
@@ -874,7 +895,9 @@ function setCh(ch,btn){
   for(var i=0;i<btns.length;i++) btns[i].classList.remove('on');
   btn.classList.add('on');
   document.getElementById('chBanner').className='ch-banner '+ch;
-  document.getElementById('chBannerTxt').textContent=CHI[ch].txt;
+  document.getElementById('chBannerIcon').textContent=CHI[ch].icon;
+  document.getElementById('chBannerTitle').textContent=CHI[ch].lb;
+  document.getElementById('chBannerSub').textContent=CHI[ch].sub;
   document.getElementById('shCh').className='sh-ch '+ch;
   document.getElementById('shCh').textContent=CHI[ch].lb;
   document.getElementById('sCh').textContent=CHI[ch].lb;
