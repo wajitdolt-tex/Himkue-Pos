@@ -714,10 +714,21 @@ var mnEd=null,stEd=null,scMode={};
 
 // ── API ───────────────────────────────────────
 function api(body,cb){
-  fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-  .then(function(r){return r.json();})
-  .then(function(d){setSyncOk(true);cb(null,d);})
-  .catch(function(e){setSyncOk(false);cb(e,null);});
+  // ใช้ GET สำหรับ read, POST สำหรับ write
+  var readActions=['getMenu','getStock','getOrders','getExpenses','getConfig','ping'];
+  var isRead=readActions.indexOf(body.action)>=0;
+  if(isRead){
+    var qs=Object.keys(body).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(typeof body[k]==='object'?JSON.stringify(body[k]):body[k]);}).join('&');
+    fetch(API+'?'+qs)
+    .then(function(r){return r.json();})
+    .then(function(d){setSyncOk(true);cb(null,d);})
+    .catch(function(e){setSyncOk(false);cb(e,null);});
+  } else {
+    fetch(API,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)})
+    .then(function(r){return r.json();})
+    .then(function(d){setSyncOk(true);cb(null,d);})
+    .catch(function(e){setSyncOk(false);cb(e,null);});
+  }
 }
 function setSyncOk(ok){
   var d=document.getElementById('syncDot');
