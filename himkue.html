@@ -757,22 +757,29 @@ function initData(){
   orders=lsG('orders')||[];
   expenses=lsG('expenses')||[];
   ordNo=lsG('ordno')||0;
+  var savedPin=lsG('pin');if(savedPin)PIN=savedPin;
+
+  // version ของ DEFAULT_OPTS — เพิ่มเลขทุกครั้งที่แก้โครงสร้างตัวเลือก
+  var OPTS_VER='v3';
+  var savedVer=lsG('optsVer');
   var savedOpts=lsG('menuOpts');
-  // ถ้าเป็น null หรือ {} หรือโครงสร้างเก่า (value เป็น array ไม่ใช่ {walkin,online}) ให้ใช้ DEFAULT
-  if(!savedOpts||Object.keys(savedOpts).length===0){
+
+  if(savedVer!==OPTS_VER||!savedOpts||Object.keys(savedOpts).length===0){
+    // version เปลี่ยน หรือยังไม่มี → reset เฉพาะ menuOpts ไม่แตะ orders
     menuOpts=JSON.parse(JSON.stringify(DEFAULT_OPTS));
+    lsS('menuOpts',menuOpts);
+    lsS('optsVer',OPTS_VER);
   } else {
-    // ตรวจว่าโครงสร้างถูกต้อง (walkin/online) ไม่ใช่ array เก่า
     var firstKey=Object.keys(savedOpts)[0];
     if(Array.isArray(savedOpts[firstKey])){
-      // โครงสร้างเก่า — reset เป็น DEFAULT
       menuOpts=JSON.parse(JSON.stringify(DEFAULT_OPTS));
       lsS('menuOpts',menuOpts);
+      lsS('optsVer',OPTS_VER);
     } else {
       menuOpts=savedOpts;
     }
   }
-  var savedPin=lsG('pin');if(savedPin)PIN=savedPin;
+
   callApi({action:'getConfig'},function(err,res){
     if(res&&res.ok&&res.data&&res.data.PIN_DASH){PIN=String(res.data.PIN_DASH);lsS('pin',PIN);}
   });
