@@ -1551,6 +1551,7 @@ function openSum(){
       else if(o.channel==='lineman')lt+=o.total;
       else if(o.channel==='grab')gt+=o.total;
     });
+    var h='';
 
     // รวมสินค้าแบบละเอียด — แยกตาม ชื่อเมนู + ตัวเลือก
     var itemMap={}; // key = "ชื่อเมนู|ตัวเลือก" → {name, opts, qty, lineTotal}
