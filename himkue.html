@@ -575,7 +575,11 @@ box-shadow:0 4px 14px rgba(0,0,0,.2)}
     </div>
     <!-- Tab: ตัวเลือก -->
     <div id="mnTabOpts" style="display:none">
-      <div style="font-size:11px;color:#5A8C6A;margin-bottom:10px">ตัวเลือกที่ลูกค้าต้องเลือกตอนสั่ง เช่น ขนาด เส้น น้ำซุป</div>
+      <div style="font-size:11px;color:#5A8C6A;margin-bottom:10px">ตัวเลือกที่ลูกค้าต้องเลือกตอนสั่ง สามารถตั้งแยกหน้าร้าน/ออนไลน์ได้</div>
+      <div class="mod-tabs" style="margin-bottom:10px">
+        <button class="mod-tab on" id="tabOptW" onclick="switchOptSide('walkin')">🏪 หน้าร้าน</button>
+        <button class="mod-tab" id="tabOptO" onclick="switchOptSide('online')">🟢 ออนไลน์</button>
+      </div>
       <div id="optGroupList"></div>
       <button class="add-opt-group" onclick="addOptGroup()">+ เพิ่มกลุ่มตัวเลือก</button>
     </div>
@@ -604,26 +608,89 @@ var NL=['เส้นใหญ่','เส้นเล็ก','เส้นห�
 var BL=['น้ำ','น้ำตก','แห้ง','ผัด'];
 var NC=['khaosoi','noodle','set'];
 
-// ตัวเลือกเมนู — เก็บแยกตาม menu id
-// รูปแบบ: {menuId: [{name, type:'radio'|'check', required, priceMode:'add'|'fixed', opts:[{lb,ex,pr}]}]}
-// priceMode='fixed' = ราคาแยกต่างหาก (ธรรมดา 40฿ / พิเศษ 50฿)
+// ตัวเลือกเมนู — แยก walkin vs online
+// priceMode='fixed' = ราคาแยกต่างหาก (กดธรรมดา = 50฿, พิเศษ = 60฿)
 // priceMode='add'   = บวกเพิ่มจากราคาเมนู (+10฿)
+// โครงสร้าง: {menuId: {walkin:[...], online:[...]}}
 var DEFAULT_OPTS={
-  1:[{name:'ข้าวซอยพิเศษ',type:'radio',required:true,priceMode:'add',opts:[{lb:'ธรรมดา',ex:0},{lb:'พิเศษ',ex:20},{lb:'จัมโบ้',ex:50}]},{name:'เพิ่มน่องไก่',type:'check',required:false,priceMode:'add',opts:[{lb:'น่องไก่',ex:19}]},{name:'รายการเสริม',type:'check',required:false,priceMode:'add',opts:[{lb:'ถ้วยพลาสติก ช้อน ตะเกียบ',ex:9},{lb:'ผักสด',ex:10},{lb:'เกี๊ยวทอด',ex:10},{lb:'แคบหมู',ex:10},{lb:'น้ำเปล่า',ex:15},{lb:'น้ำแข็ง',ex:10}]}],
-  2:[{name:'ข้าวซอยพิเศษ',type:'radio',required:true,priceMode:'add',opts:[{lb:'ธรรมดา',ex:0},{lb:'พิเศษ',ex:20},{lb:'จัมโบ้',ex:50}]},{name:'ท็อปปิ้ง หมู',type:'check',required:false,priceMode:'add',opts:[{lb:'รวมหมู',ex:0},{lb:'หมูตุ๋น',ex:0},{lb:'หมูนุ่ม',ex:0},{lb:'หมูสับ',ex:0},{lb:'ลูกชิ้นหมู',ex:0},{lb:'เครื่องในหมู',ex:0}]},{name:'รายการเสริม',type:'check',required:false,priceMode:'add',opts:[{lb:'น้ำเปล่า',ex:15},{lb:'น้ำแข็ง',ex:10}]}],
-  3:[{name:'ข้าวซอยพิเศษ',type:'radio',required:true,priceMode:'add',opts:[{lb:'ธรรมดา',ex:0},{lb:'พิเศษ',ex:20},{lb:'จัมโบ้',ex:50}]},{name:'รายการเสริม',type:'check',required:false,priceMode:'add',opts:[{lb:'น้ำเปล่า',ex:15},{lb:'น้ำแข็ง',ex:10}]}],
-  4:[{name:'ข้าวซอยพิเศษ',type:'radio',required:true,priceMode:'add',opts:[{lb:'ธรรมดา',ex:0},{lb:'พิเศษ',ex:20},{lb:'จัมโบ้',ex:50}]}],
-  5:[{name:'เส้น',type:'radio',required:true,priceMode:'add',opts:[{lb:'เส้นใหญ่',ex:0},{lb:'เส้นเล็ก',ex:0},{lb:'เส้นหมี่',ex:0},{lb:'วุ้นเส้น',ex:0},{lb:'มาม่า',ex:0}]},{name:'น้ำซุป',type:'radio',required:true,priceMode:'add',opts:[{lb:'น้ำใส',ex:0},{lb:'น้ำตก',ex:0},{lb:'แห้ง',ex:0}]},{name:'ปริมาณ',type:'radio',required:true,priceMode:'add',opts:[{lb:'ธรรมดา',ex:0},{lb:'พิเศษ',ex:15}]},{name:'ท็อปปิ้ง หมู',type:'check',required:false,priceMode:'add',opts:[{lb:'รวมหมู',ex:0},{lb:'หมูตุ๋น',ex:0},{lb:'หมูนุ่ม',ex:0},{lb:'หมูสับ',ex:0},{lb:'ลูกชิ้นหมู',ex:0}]}],
-  6:[{name:'เส้น',type:'radio',required:true,priceMode:'add',opts:[{lb:'เส้นใหญ่',ex:0},{lb:'เส้นเล็ก',ex:0},{lb:'เส้นหมี่',ex:0},{lb:'วุ้นเส้น',ex:0}]},{name:'น้ำซุป',type:'radio',required:true,priceMode:'add',opts:[{lb:'น้ำใส',ex:0},{lb:'น้ำตก',ex:0},{lb:'แห้ง',ex:0}]},{name:'ปริมาณ',type:'radio',required:true,priceMode:'add',opts:[{lb:'ธรรมดา',ex:0},{lb:'พิเศษ',ex:15}]},{name:'ท็อปปิ้ง เนื้อควาย',type:'check',required:false,priceMode:'add',opts:[{lb:'รวมเนื้อ',ex:0},{lb:'เนื้อเปื่อย',ex:0},{lb:'เนื้อสด',ex:0},{lb:'สะไบนาง',ex:0},{lb:'ลูกชิ้นเนื้อ',ex:0}]}],
-  7:[{name:'เส้น',type:'radio',required:true,priceMode:'add',opts:[{lb:'เส้นใหญ่',ex:0},{lb:'เส้นเล็ก',ex:0},{lb:'เส้นหมี่',ex:0},{lb:'วุ้นเส้น',ex:0}]},{name:'น้ำซุปเย็นตาโฟ',type:'radio',required:true,priceMode:'add',opts:[{lb:'เย็นตาโฟน้ำใส',ex:0},{lb:'เย็นตาโฟต้มยำ',ex:5}]}],
-  8:[{name:'เส้น',type:'radio',required:true,priceMode:'add',opts:[{lb:'เส้นใหญ่',ex:0},{lb:'เส้นเล็ก',ex:0},{lb:'เส้นหมี่',ex:0}]},{name:'เนื้อสัตว์',type:'radio',required:true,priceMode:'add',opts:[{lb:'รวมหมู',ex:0},{lb:'รวมเนื้อ',ex:0}]},{name:'น้ำซุปต้มยำ',type:'radio',required:true,priceMode:'add',opts:[{lb:'ต้มยำน้ำใส',ex:0},{lb:'ต้มยำน้ำตก',ex:0}]}],
-  9:[{name:'เส้น',type:'radio',required:true,priceMode:'add',opts:[{lb:'เส้นใหญ่',ex:0},{lb:'เส้นเล็ก',ex:0},{lb:'เส้นหมี่',ex:0}]},{name:'น้ำซุป เกาเหลา',type:'radio',required:true,priceMode:'add',opts:[{lb:'น้ำใส',ex:0},{lb:'น้ำตก',ex:0},{lb:'ต้มยำ น้ำใส',ex:5},{lb:'ต้มยำ น้ำตก',ex:5}]},{name:'เนื้อสัตว์',type:'radio',required:true,priceMode:'add',opts:[{lb:'รวมหมู',ex:0},{lb:'รวมเนื้อ',ex:0}]}],
-  10:[{name:'น้ำจิ้ม',type:'radio',required:true,priceMode:'add',opts:[{lb:'ไม่รับน้ำจิ้ม',ex:0},{lb:'น้ำจิ้มเผ็ด',ex:0},{lb:'น้ำจิ้มไก่',ex:0},{lb:'น้ำจิ้มเผ็ด+น้ำจิ้มไก่',ex:5}]}],
-  11:[{name:'น้ำจิ้ม',type:'radio',required:true,priceMode:'add',opts:[{lb:'ไม่รับน้ำจิ้ม',ex:0},{lb:'น้ำจิ้มเผ็ด',ex:0},{lb:'น้ำจิ้มไก่',ex:0},{lb:'น้ำจิ้มเผ็ด+น้ำจิ้มไก่',ex:5}]}],
-  12:[{name:'น้ำจิ้ม',type:'radio',required:true,priceMode:'add',opts:[{lb:'ไม่รับน้ำจิ้ม',ex:0},{lb:'น้ำจิ้มเผ็ด',ex:0},{lb:'น้ำจิ้มไก่',ex:0}]}],
-  13:[{name:'น้ำจิ้ม',type:'radio',required:true,priceMode:'add',opts:[{lb:'ไม่รับน้ำจิ้ม',ex:0},{lb:'น้ำจิ้มเผ็ด',ex:0},{lb:'น้ำจิ้มไก่',ex:0}]}]
+  1:{
+    walkin:[
+      {name:'ขนาด',type:'radio',required:true,priceMode:'fixed',opts:[{lb:'ธรรมดา',ex:50},{lb:'พิเศษ',ex:60},{lb:'จัมโบ้',ex:80}]},
+      {name:'เพิ่มน่องไก่',type:'check',required:false,priceMode:'add',opts:[{lb:'น่องไก่',ex:19}]},
+      {name:'รายการเสริม',type:'check',required:false,priceMode:'add',opts:[{lb:'ถ้วยพลาสติก ช้อน ตะเกียบ',ex:9},{lb:'ผักสด',ex:10},{lb:'เกี๊ยวทอด',ex:10},{lb:'แคบหมู',ex:10},{lb:'น้ำเปล่า',ex:15},{lb:'น้ำแข็ง',ex:10}]}
+    ],
+    online:[
+      {name:'ขนาด',type:'radio',required:true,priceMode:'fixed',opts:[{lb:'ธรรมดา',ex:69},{lb:'พิเศษ',ex:79}]},
+      {name:'เพิ่มน่องไก่',type:'check',required:false,priceMode:'add',opts:[{lb:'น่องไก่',ex:19}]}
+    ]
+  },
+  2:{
+    walkin:[
+      {name:'ขนาด',type:'radio',required:true,priceMode:'fixed',opts:[{lb:'ธรรมดา',ex:75},{lb:'พิเศษ',ex:85}]},
+      {name:'ท็อปปิ้ง หมู',type:'check',required:false,priceMode:'add',opts:[{lb:'รวมหมู',ex:0},{lb:'หมูตุ๋น',ex:0},{lb:'หมูนุ่ม',ex:0},{lb:'หมูสับ',ex:0},{lb:'ลูกชิ้นหมู',ex:0}]},
+      {name:'รายการเสริม',type:'check',required:false,priceMode:'add',opts:[{lb:'น้ำเปล่า',ex:15},{lb:'น้ำแข็ง',ex:10}]}
+    ],
+    online:[
+      {name:'ขนาด',type:'radio',required:true,priceMode:'fixed',opts:[{lb:'ธรรมดา',ex:75},{lb:'พิเศษ',ex:85}]}
+    ]
+  },
+  3:{
+    walkin:[
+      {name:'ขนาด',type:'radio',required:true,priceMode:'fixed',opts:[{lb:'ธรรมดา',ex:75},{lb:'พิเศษ',ex:85}]},
+      {name:'รายการเสริม',type:'check',required:false,priceMode:'add',opts:[{lb:'น้ำเปล่า',ex:15},{lb:'น้ำแข็ง',ex:10}]}
+    ],
+    online:[
+      {name:'ขนาด',type:'radio',required:true,priceMode:'fixed',opts:[{lb:'ธรรมดา',ex:75},{lb:'พิเศษ',ex:85}]}
+    ]
+  },
+  4:{
+    walkin:[{name:'ขนาด',type:'radio',required:true,priceMode:'fixed',opts:[{lb:'ธรรมดา',ex:89},{lb:'พิเศษ',ex:99}]}],
+    online:[{name:'ขนาด',type:'radio',required:true,priceMode:'fixed',opts:[{lb:'ธรรมดา',ex:89},{lb:'พิเศษ',ex:99}]}]
+  },
+  5:{
+    walkin:[
+      {name:'ขนาด',type:'radio',required:true,priceMode:'fixed',opts:[{lb:'ธรรมดา',ex:40},{lb:'พิเศษ',ex:50}]},
+      {name:'เส้น',type:'radio',required:true,priceMode:'add',opts:[{lb:'เส้นใหญ่',ex:0},{lb:'เส้นเล็ก',ex:0},{lb:'เส้นหมี่',ex:0},{lb:'วุ้นเส้น',ex:0},{lb:'มาม่า',ex:0}]},
+      {name:'น้ำซุป',type:'radio',required:true,priceMode:'add',opts:[{lb:'น้ำใส',ex:0},{lb:'น้ำตก',ex:0},{lb:'แห้ง',ex:0}]},
+      {name:'ท็อปปิ้ง หมู',type:'check',required:false,priceMode:'add',opts:[{lb:'รวมหมู',ex:0},{lb:'หมูตุ๋น',ex:0},{lb:'หมูนุ่ม',ex:0},{lb:'หมูสับ',ex:0},{lb:'ลูกชิ้นหมู',ex:0}]}
+    ],
+    online:[
+      {name:'ขนาด',type:'radio',required:true,priceMode:'fixed',opts:[{lb:'ธรรมดา',ex:65},{lb:'พิเศษ',ex:75}]},
+      {name:'เส้น',type:'radio',required:true,priceMode:'add',opts:[{lb:'เส้นใหญ่',ex:0},{lb:'เส้นเล็ก',ex:0},{lb:'เส้นหมี่',ex:0},{lb:'วุ้นเส้น',ex:0}]},
+      {name:'น้ำซุป',type:'radio',required:true,priceMode:'add',opts:[{lb:'น้ำใส',ex:0},{lb:'น้ำตก',ex:0},{lb:'แห้ง',ex:0}]}
+    ]
+  },
+  6:{
+    walkin:[
+      {name:'ขนาด',type:'radio',required:true,priceMode:'fixed',opts:[{lb:'ธรรมดา',ex:40},{lb:'พิเศษ',ex:50}]},
+      {name:'เส้น',type:'radio',required:true,priceMode:'add',opts:[{lb:'เส้นใหญ่',ex:0},{lb:'เส้นเล็ก',ex:0},{lb:'เส้นหมี่',ex:0},{lb:'วุ้นเส้น',ex:0}]},
+      {name:'น้ำซุป',type:'radio',required:true,priceMode:'add',opts:[{lb:'น้ำใส',ex:0},{lb:'น้ำตก',ex:0},{lb:'แห้ง',ex:0}]},
+      {name:'ท็อปปิ้ง เนื้อควาย',type:'check',required:false,priceMode:'add',opts:[{lb:'รวมเนื้อ',ex:0},{lb:'เนื้อเปื่อย',ex:0},{lb:'เนื้อสด',ex:0},{lb:'สะไบนาง',ex:0},{lb:'ลูกชิ้นเนื้อ',ex:0}]}
+    ],
+    online:[
+      {name:'ขนาด',type:'radio',required:true,priceMode:'fixed',opts:[{lb:'ธรรมดา',ex:69},{lb:'พิเศษ',ex:79}]},
+      {name:'เส้น',type:'radio',required:true,priceMode:'add',opts:[{lb:'เส้นใหญ่',ex:0},{lb:'เส้นเล็ก',ex:0},{lb:'เส้นหมี่',ex:0}]},
+      {name:'น้ำซุป',type:'radio',required:true,priceMode:'add',opts:[{lb:'น้ำใส',ex:0},{lb:'น้ำตก',ex:0}]}
+    ]
+  },
+  7:{
+    walkin:[{name:'เส้น',type:'radio',required:true,priceMode:'add',opts:[{lb:'เส้นใหญ่',ex:0},{lb:'เส้นเล็ก',ex:0},{lb:'เส้นหมี่',ex:0}]},{name:'น้ำซุปเย็นตาโฟ',type:'radio',required:true,priceMode:'add',opts:[{lb:'เย็นตาโฟน้ำใส',ex:0},{lb:'เย็นตาโฟต้มยำ',ex:5}]}],
+    online:[{name:'เส้น',type:'radio',required:true,priceMode:'add',opts:[{lb:'เส้นใหญ่',ex:0},{lb:'เส้นเล็ก',ex:0}]},{name:'น้ำซุปเย็นตาโฟ',type:'radio',required:true,priceMode:'add',opts:[{lb:'เย็นตาโฟน้ำใส',ex:0},{lb:'เย็นตาโฟต้มยำ',ex:5}]}]
+  },
+  8:{
+    walkin:[{name:'เส้น',type:'radio',required:true,priceMode:'add',opts:[{lb:'เส้นใหญ่',ex:0},{lb:'เส้นเล็ก',ex:0},{lb:'เส้นหมี่',ex:0}]},{name:'เนื้อสัตว์',type:'radio',required:true,priceMode:'add',opts:[{lb:'รวมหมู',ex:0},{lb:'รวมเนื้อ',ex:0}]},{name:'น้ำซุปต้มยำ',type:'radio',required:true,priceMode:'add',opts:[{lb:'ต้มยำน้ำใส',ex:0},{lb:'ต้มยำน้ำตก',ex:0}]}],
+    online:[{name:'เส้น',type:'radio',required:true,priceMode:'add',opts:[{lb:'เส้นใหญ่',ex:0},{lb:'เส้นเล็ก',ex:0}]},{name:'เนื้อสัตว์',type:'radio',required:true,priceMode:'add',opts:[{lb:'รวมหมู',ex:0},{lb:'รวมเนื้อ',ex:0}]},{name:'น้ำซุปต้มยำ',type:'radio',required:true,priceMode:'add',opts:[{lb:'ต้มยำน้ำใส',ex:0},{lb:'ต้มยำน้ำตก',ex:0}]}]
+  },
+  9:{
+    walkin:[{name:'เส้น',type:'radio',required:true,priceMode:'add',opts:[{lb:'เส้นใหญ่',ex:0},{lb:'เส้นเล็ก',ex:0},{lb:'เส้นหมี่',ex:0}]},{name:'น้ำซุป',type:'radio',required:true,priceMode:'add',opts:[{lb:'น้ำใส',ex:0},{lb:'น้ำตก',ex:0},{lb:'ต้มยำ',ex:5}]},{name:'เนื้อสัตว์',type:'radio',required:true,priceMode:'add',opts:[{lb:'รวมหมู',ex:0},{lb:'รวมเนื้อ',ex:0}]}],
+    online:[{name:'เส้น',type:'radio',required:true,priceMode:'add',opts:[{lb:'เส้นใหญ่',ex:0},{lb:'เส้นเล็ก',ex:0}]},{name:'น้ำซุป',type:'radio',required:true,priceMode:'add',opts:[{lb:'น้ำใส',ex:0},{lb:'น้ำตก',ex:0}]},{name:'เนื้อสัตว์',type:'radio',required:true,priceMode:'add',opts:[{lb:'รวมหมู',ex:0},{lb:'รวมเนื้อ',ex:0}]}]
+  },
+  10:{walkin:[{name:'น้ำจิ้ม',type:'radio',required:true,priceMode:'add',opts:[{lb:'ไม่รับน้ำจิ้ม',ex:0},{lb:'น้ำจิ้มเผ็ด',ex:0},{lb:'น้ำจิ้มไก่',ex:0},{lb:'น้ำจิ้มเผ็ด+น้ำจิ้มไก่',ex:5}]}],online:[{name:'น้ำจิ้ม',type:'radio',required:true,priceMode:'add',opts:[{lb:'ไม่รับน้ำจิ้ม',ex:0},{lb:'น้ำจิ้มเผ็ด',ex:0},{lb:'น้ำจิ้มไก่',ex:0}]}]},
+  11:{walkin:[{name:'น้ำจิ้ม',type:'radio',required:true,priceMode:'add',opts:[{lb:'ไม่รับน้ำจิ้ม',ex:0},{lb:'น้ำจิ้มเผ็ด',ex:0},{lb:'น้ำจิ้มไก่',ex:0},{lb:'น้ำจิ้มเผ็ด+น้ำจิ้มไก่',ex:5}]}],online:[{name:'น้ำจิ้ม',type:'radio',required:true,priceMode:'add',opts:[{lb:'ไม่รับน้ำจิ้ม',ex:0},{lb:'น้ำจิ้มเผ็ด',ex:0}]}]},
+  12:{walkin:[{name:'น้ำจิ้ม',type:'radio',required:true,priceMode:'add',opts:[{lb:'ไม่รับน้ำจิ้ม',ex:0},{lb:'น้ำจิ้มเผ็ด',ex:0},{lb:'น้ำจิ้มไก่',ex:0}]}],online:[{name:'น้ำจิ้ม',type:'radio',required:true,priceMode:'add',opts:[{lb:'ไม่รับน้ำจิ้ม',ex:0},{lb:'น้ำจิ้มเผ็ด',ex:0}]}]},
+  13:{walkin:[{name:'น้ำจิ้ม',type:'radio',required:true,priceMode:'add',opts:[{lb:'ไม่รับน้ำจิ้ม',ex:0},{lb:'น้ำจิ้มเผ็ด',ex:0},{lb:'น้ำจิ้มไก่',ex:0}]}],online:[{name:'น้ำจิ้ม',type:'radio',required:true,priceMode:'add',opts:[{lb:'ไม่รับน้ำจิ้ม',ex:0},{lb:'น้ำจิ้มเผ็ด',ex:0}]}]}
 };
-var menuOpts={}; // โหลดจาก localStorage / Sheets
+var menuOpts={}; // {id: {walkin:[...], online:[...]}}
 var CATS=[{id:'all',lb:'ทั้งหมด'},{id:'khaosoi',lb:'ข้าวซอย'},{id:'noodle',lb:'ก๋วยเตี๋ยว'},{id:'luak',lb:'ลวกจิ้ม'},{id:'side',lb:'เครื่องเคียง'},{id:'drink',lb:'เครื่องดื่ม'},{id:'set',lb:'เซต'},{id:'custom',lb:'อื่นๆ'}];
 var CHI={walkin:{lb:'หน้าร้าน',icon:'🏪',sub:'ราคาปกติ'},lineman:{lb:'LINE MAN',icon:'🟢',sub:'ราคาออนไลน์'},grab:{lb:'Grab',icon:'🟢',sub:'ราคาออนไลน์'}};
 var FM=[
@@ -842,7 +909,10 @@ function openPK(m){
   document.getElementById('pkEm').textContent=m.emoji;
   document.getElementById('pkNm').textContent=m.name;
   document.getElementById('pkPr').textContent='฿'+gp(m);
-  var opts=menuOpts[m.id]||[];
+  // ดึง opts ตามช่องทาง walkin/online
+  var side=(ch==='walkin')?'walkin':'online';
+  var mOpts=menuOpts[m.id]||DEFAULT_OPTS[m.id];
+  var opts=mOpts?(mOpts[side]||mOpts.walkin||[]):[];
   var h='';
   opts.forEach(function(sec,si){
     h+='<div class="pk-sec"><div class="pk-lb">'+sec.name+(sec.required?' <span style="color:#C0392B;font-size:9px">(ต้องเลือก)</span>':'')+'</div><div class="pkopts">';
@@ -854,14 +924,12 @@ function openPK(m){
         if(checked)pkOpts[key]={sec:si,oi:oi,lb:opt.lb,ex:opt.ex,type:'radio',secName:sec.name,priceMode:sec.priceMode};
         h+='<div class="popt'+(checked?' on':'')+'" onclick="selOpt(this,\''+key+'\','+si+','+oi+',\'radio\',\''+sec.name.replace(/'/g,'')+'\',\''+opt.lb.replace(/'/g,'')+'\','+opt.ex+',\''+sec.priceMode+'\')">'+opt.lb+(dispPrice?' <b>'+dispPrice+'</b>':'')+'</div>';
       } else {
-        h+='<div class="popt" onclick="togOpt(this,\''+key+'\','+si+','+oi+',\''+sec.name.replace(/'/g,'')+'\',\''+opt.lb.replace(/'/g,'')+'\','+opt.ex+',\''+sec.priceMode+'\')">'+opt.lb+(dispPrice?' <b>+฿'+opt.ex+'</b>':'')+'</div>';
+        h+='<div class="popt" onclick="togOpt(this,\''+key+'\','+si+','+oi+',\''+sec.name.replace(/'/g,'')+'\',\''+opt.lb.replace(/'/g,'')+'\','+opt.ex+',\''+sec.priceMode+'\')">'+opt.lb+(opt.ex>0?' <b>+฿'+opt.ex+'</b>':'')+'</div>';
       }
     });
     h+='</div></div>';
   });
-  if(!opts.length){
-    h='<div style="padding:14px;text-align:center;color:#7A9A82;font-size:12px">ไม่มีตัวเลือก</div>';
-  }
+  if(!opts.length)h='<div style="padding:14px;text-align:center;color:#7A9A82;font-size:12px">ไม่มีตัวเลือก</div>';
   document.getElementById('pkOpts').innerHTML=h;
   document.getElementById('pkbd').classList.add('on');
   document.getElementById('pkbox').classList.add('on');
@@ -1038,40 +1106,46 @@ function rMD(){
   });
   document.getElementById('mnGrid').innerHTML=h;
 }
-var editingOpts=[]; // copy ของ menuOpts สำหรับเมนูที่กำลังแก้
+var editingOpts={walkin:[],online:[]}; // แยก walkin/online
+var editingOptSide='walkin';
+
+function switchOptSide(side){
+  editingOptSide=side;
+  document.getElementById('tabOptW').classList.toggle('on',side==='walkin');
+  document.getElementById('tabOptO').classList.toggle('on',side==='online');
+  renderOptGroups();
+}
 
 function switchMnTab(tab){
   document.getElementById('mnTabInfo').style.display=tab==='info'?'':'none';
   document.getElementById('mnTabOpts').style.display=tab==='opts'?'':'none';
   document.getElementById('tabInfo').classList.toggle('on',tab==='info');
   document.getElementById('tabOpts').classList.toggle('on',tab==='opts');
-  if(tab==='opts')renderOptGroups();
+  if(tab==='opts'){editingOptSide='walkin';document.getElementById('tabOptW').classList.add('on');document.getElementById('tabOptO').classList.remove('on');renderOptGroups();}
 }
 
 function renderOptGroups(){
+  var grps=editingOpts[editingOptSide]||[];
   var h='';
-  editingOpts.forEach(function(grp,gi){
+  grps.forEach(function(grp,gi){
     h+='<div class="opt-group">';
     h+='<div class="opt-group-hd">';
-    h+='<div>';
-    h+='<input class="opt-in" style="font-size:12px;font-weight:700;margin-bottom:5px" value="'+grp.name+'" oninput="editingOpts['+gi+'].name=this.value" placeholder="ชื่อกลุ่ม เช่น ขนาด">';
+    h+='<div style="flex:1">';
+    h+='<input class="opt-in" style="font-size:12px;font-weight:700;margin-bottom:5px;width:100%" value="'+grp.name+'" oninput="editingOpts[\''+editingOptSide+'\']['+gi+'].name=this.value" placeholder="ชื่อกลุ่ม เช่น ขนาด">';
     h+='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;">';
-    // type
-    h+='<label style="font-size:10px;color:#5A8C6A;display:flex;align-items:center;gap:3px"><input type="radio" name="type'+gi+'" '+(grp.type==='radio'?'checked':'')+' onchange="editingOpts['+gi+'].type=\'radio\'"> เลือก 1</label>';
-    h+='<label style="font-size:10px;color:#5A8C6A;display:flex;align-items:center;gap:3px"><input type="radio" name="type'+gi+'" '+(grp.type==='check'?'checked':'')+' onchange="editingOpts['+gi+'].type=\'check\'"> เลือกได้หลาย</label>';
-    // required
-    h+='<label style="font-size:10px;color:#5A8C6A;display:flex;align-items:center;gap:3px"><input type="checkbox" '+(grp.required?'checked':'')+' onchange="editingOpts['+gi+'].required=this.checked"> บังคับ</label>';
-    // priceMode
-    h+='<label style="font-size:10px;color:#5A8C6A;display:flex;align-items:center;gap:3px"><input type="radio" name="pm'+gi+'" '+(grp.priceMode==='add'?'checked':'')+' onchange="editingOpts['+gi+'].priceMode=\'add\'"> บวกเพิ่ม</label>';
-    h+='<label style="font-size:10px;color:#C0392B;display:flex;align-items:center;gap:3px"><input type="radio" name="pm'+gi+'" '+(grp.priceMode==='fixed'?'checked':'')+' onchange="editingOpts['+gi+'].priceMode=\'fixed\'"> ราคาแยก</label>';
+    h+='<label style="font-size:10px;color:#5A8C6A;display:flex;align-items:center;gap:3px"><input type="radio" name="type'+editingOptSide+gi+'" '+(grp.type==='radio'?'checked':'')+' onchange="editingOpts[\''+editingOptSide+'\']['+gi+'].type=\'radio\'"> เลือก 1</label>';
+    h+='<label style="font-size:10px;color:#5A8C6A;display:flex;align-items:center;gap:3px"><input type="radio" name="type'+editingOptSide+gi+'" '+(grp.type==='check'?'checked':'')+' onchange="editingOpts[\''+editingOptSide+'\']['+gi+'].type=\'check\'"> เลือกได้หลาย</label>';
+    h+='<label style="font-size:10px;color:#5A8C6A;display:flex;align-items:center;gap:3px"><input type="checkbox" '+(grp.required?'checked':'')+' onchange="editingOpts[\''+editingOptSide+'\']['+gi+'].required=this.checked"> บังคับ</label>';
+    h+='<label style="font-size:10px;color:#5A8C6A;display:flex;align-items:center;gap:3px"><input type="radio" name="pm'+editingOptSide+gi+'" '+(grp.priceMode==='add'?'checked':'')+' onchange="editingOpts[\''+editingOptSide+'\']['+gi+'].priceMode=\'add\'"> บวกเพิ่ม</label>';
+    h+='<label style="font-size:10px;color:#C0392B;display:flex;align-items:center;gap:3px"><input type="radio" name="pm'+editingOptSide+gi+'" '+(grp.priceMode==='fixed'?'checked':'')+' onchange="editingOpts[\''+editingOptSide+'\']['+gi+'].priceMode=\'fixed\'"> ราคาแยก</label>';
     h+='</div></div>';
     h+='<button class="opt-del-g" onclick="delOptGroup('+gi+')">🗑</button>';
     h+='</div>';
     grp.opts.forEach(function(opt,oi){
       var prLabel=grp.priceMode==='fixed'?'฿':'฿+';
       h+='<div class="opt-row">';
-      h+='<input class="opt-in" value="'+opt.lb+'" oninput="editingOpts['+gi+'].opts['+oi+'].lb=this.value" placeholder="ชื่อตัวเลือก">';
-      h+='<input class="opt-pr" type="number" value="'+opt.ex+'" oninput="editingOpts['+gi+'].opts['+oi+'].ex=parseInt(this.value)||0" placeholder="'+prLabel+'">';
+      h+='<input class="opt-in" value="'+opt.lb+'" oninput="editingOpts[\''+editingOptSide+'\']['+gi+'].opts['+oi+'].lb=this.value" placeholder="ชื่อตัวเลือก">';
+      h+='<input class="opt-pr" type="number" value="'+opt.ex+'" oninput="editingOpts[\''+editingOptSide+'\']['+gi+'].opts['+oi+'].ex=parseInt(this.value)||0" placeholder="'+prLabel+'">';
       h+='<button class="opt-del" onclick="delOptRow('+gi+','+oi+')">✕</button>';
       h+='</div>';
     });
@@ -1082,16 +1156,18 @@ function renderOptGroups(){
 }
 
 function addOptGroup(){
-  editingOpts.push({name:'กลุ่มใหม่',type:'radio',required:false,priceMode:'add',opts:[{lb:'',ex:0}]});
+  if(!editingOpts[editingOptSide])editingOpts[editingOptSide]=[];
+  editingOpts[editingOptSide].push({name:'กลุ่มใหม่',type:'radio',required:false,priceMode:'add',opts:[{lb:'',ex:0}]});
   renderOptGroups();
 }
-function delOptGroup(gi){editingOpts.splice(gi,1);renderOptGroups();}
-function addOptRow(gi){editingOpts[gi].opts.push({lb:'',ex:0});renderOptGroups();}
-function delOptRow(gi,oi){editingOpts[gi].opts.splice(oi,1);renderOptGroups();}
+function delOptGroup(gi){editingOpts[editingOptSide].splice(gi,1);renderOptGroups();}
+function addOptRow(gi){editingOpts[editingOptSide][gi].opts.push({lb:'',ex:0});renderOptGroups();}
+function delOptRow(gi,oi){editingOpts[editingOptSide][gi].opts.splice(oi,1);renderOptGroups();}
 
 function openMnMod(){
   mnEd=null;
-  editingOpts=[];
+  editingOpts={walkin:[],online:[]};
+  editingOptSide='walkin';
   document.getElementById('mnTitle').textContent='+ เพิ่มเมนู';
   ['mnNm','mnEm'].forEach(function(id){document.getElementById(id).value='';});
   ['mnPr','mnPro','mnCost'].forEach(function(id){document.getElementById(id).value='';});
@@ -1102,7 +1178,12 @@ function openMnMod(){
 function editMn(id){
   var m=null;menu.forEach(function(x){if(x.id==id)m=x;});if(!m)return;
   mnEd=id;
-  editingOpts=JSON.parse(JSON.stringify(menuOpts[id]||[]));
+  var saved=menuOpts[id]||DEFAULT_OPTS[id]||{walkin:[],online:[]};
+  editingOpts={
+    walkin:JSON.parse(JSON.stringify(saved.walkin||[])),
+    online:JSON.parse(JSON.stringify(saved.online||[]))
+  };
+  editingOptSide='walkin';
   document.getElementById('mnTitle').textContent='✏️ แก้ไขเมนู';
   document.getElementById('mnNm').value=m.name;
   document.getElementById('mnEm').value=m.emoji;
@@ -1130,8 +1211,11 @@ function saveMn(){
     mid=Date.now();
     menu.push({id:mid,cat:cat,name:nm,price:pr,priceOnline:pro,cost:cost,emoji:em,desc:''});
   }
-  // บันทึก options
-  menuOpts[mid]=editingOpts.filter(function(g){return g.name&&g.opts.length;});
+  // บันทึก options แบบ {walkin:[...], online:[...]}
+  menuOpts[mid]={
+    walkin:editingOpts.walkin.filter(function(g){return g.name&&g.opts.length;}),
+    online:editingOpts.online.filter(function(g){return g.name&&g.opts.length;})
+  };
   lsS('menu',menu);
   lsS('menuOpts',menuOpts);
   callApi({action:'saveMenu',items:menu},function(err,res){
