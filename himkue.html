@@ -949,14 +949,15 @@ function openPK(m){
   document.getElementById('pkbox').classList.add('on');
 }
 function selOpt(el,key,si,oi,type,secName,lb,ex,priceMode){
-  Object.keys(pkOpts).forEach(function(k){if(pkOpts[k].sec===si&&pkOpts[k].type==='radio')delete pkOpts[k];});
-  pkOpts[key]={sec:si,oi:oi,lb:lb,ex:ex,type:'radio',secName:secName,priceMode:priceMode||'add'};
+  // ลบ key เดิมในกลุ่มเดียวกันออกก่อน
+  Object.keys(pkOpts).forEach(function(k){if(pkOpts[k].sec===si)delete pkOpts[k];});
+  pkOpts[key]={sec:si,oi:oi,lb:lb,ex:parseInt(ex)||0,type:'radio',secName:secName,priceMode:priceMode||'add'};
   el.parentNode.querySelectorAll('.popt').forEach(function(o){o.classList.remove('on');});
   el.classList.add('on');
 }
 function togOpt(el,key,si,oi,secName,lb,ex,priceMode){
   if(pkOpts[key]){delete pkOpts[key];el.classList.remove('on');}
-  else{pkOpts[key]={sec:si,oi:oi,lb:lb,ex:ex,type:'check',secName:secName,priceMode:priceMode||'add'};el.classList.add('on');}
+  else{pkOpts[key]={sec:si,oi:oi,lb:lb,ex:parseInt(ex)||0,type:'check',secName:secName,priceMode:priceMode||'add'};el.classList.add('on');}
 }
 function closePK(){document.getElementById('pkbd').classList.remove('on');document.getElementById('pkbox').classList.remove('on');}
 function confirmPK(){
@@ -965,30 +966,33 @@ function confirmPK(){
   var mOpts=menuOpts[m.id]||DEFAULT_OPTS[m.id];
   var opts=mOpts?(mOpts[side]||mOpts.walkin||[]):[];
   if(opts.length){
-    var parts=[];var extraAdd=0;var fixedPrice=null;
-    // เรียง key ตาม section index ให้ถูกต้อง
+    var parts=[];
+    var fixedPrice=null; // ราคาหลักจาก priceMode=fixed (เช่น ธรรมดา 40 / พิเศษ 50)
+    var extraAdd=0;      // ราคาบวกเพิ่ม priceMode=add
+
     Object.keys(pkOpts).sort(function(a,b){
-      var sa=pkOpts[a].sec,sb2=pkOpts[b].sec;
-      return sa!==sb2?sa-sb2:pkOpts[a].oi-pkOpts[b].oi;
+      return pkOpts[a].sec!==pkOpts[b].sec?pkOpts[a].sec-pkOpts[b].sec:pkOpts[a].oi-pkOpts[b].oi;
     }).forEach(function(k){
       var o=pkOpts[k];
       parts.push(o.lb);
-      if(o.priceMode==='fixed'&&o.type==='radio'){
-        fixedPrice=Number(o.ex)||0;
+      if(o.priceMode==='fixed'){
+        // fixed radio = ราคาหลัก (ใช้อันที่เลือก เขียนทับกันถ้ามีหลาย group fixed)
+        fixedPrice=parseInt(o.ex)||0;
       } else {
-        extraAdd+=Number(o.ex)||0;
+        extraAdd+=parseInt(o.ex)||0;
       }
     });
+
     var sb=parts.join(', ');
-    var finalPrice=(fixedPrice!==null?fixedPrice:gp(m))+extraAdd;
+    var finalPrice=(fixedPrice!==null ? fixedPrice : gp(m)) + extraAdd;
     pushCartEx(m,sb,finalPrice);
   } else {
     pushCart(m,'','');
   }
   closePK();
 }
-function pushCartEx(m,sb,extra){
-  var pr=gp(m)+extra;
+function pushCartEx(m,sb,finalPrice){
+  var pr=finalPrice; // ราคาสุดท้ายที่คำนวณแล้วจาก confirmPK
   var ex=null;cart.forEach(function(c){if(c.mid==m.id&&c.sb===sb)ex=c;});
   if(ex){ex.qty++;}
   else{cart.push({k:Date.now()+Math.random(),mid:m.id,nm:m.name,em:m.emoji,pr:pr,qty:1,ok:sb,sb:sb});}
