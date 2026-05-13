@@ -928,6 +928,26 @@ function chgCart(k,d){
   for(var i=0;i<cart.length;i++){if(cart[i].k===k){cart[i].qty+=d;if(cart[i].qty<=0)cart.splice(i,1);break;}}
   rCart();
 }
+function removeCartItem(k){
+  cart=cart.filter(function(c){return c.k!==k;});
+  rCart();
+}
+function editCartItem(k){
+  // หารายการใน cart
+  var ci=null;for(var i=0;i<cart.length;i++){if(cart[i].k===k){ci=cart[i];break;}}
+  if(!ci)return;
+  // หาเมนู
+  var m=null;menu.forEach(function(x){if(x.id==ci.mid)m=x;});
+  if(!m)return;
+  // ลบออกจาก cart แล้วเปิด picker ใหม่ (จำ qty ไว้)
+  var oldQty=ci.qty;
+  cart=cart.filter(function(c){return c.k!==k;});
+  rCart();
+  // เปิด picker — กดเพิ่มลงตะกร้าแล้วจะเพิ่ม qty ตาม
+  pkEditQty=oldQty;
+  openPK(m);
+}
+var pkEditQty=1; // จำ qty เดิมตอน edit
 function clearCart(){cart=[];rCart();}
 function rCart(){
   var cnt=0,tot=0;
@@ -943,31 +963,40 @@ function rCart(){
     h='<div class="sh-empty"><div style="font-size:36px;opacity:.2">🍜</div><div>ยังไม่มีรายการ</div></div>';
   } else {
     cart.forEach(function(c){
-      // สร้าง detail lines
-      var detailHtml='';
+      var optRows='';
       if(c.details&&c.details.length){
         c.details.forEach(function(d){
-          var prTxt=d.type==='fixed'?'฿'+d.pr:(d.pr>0?'+฿'+d.pr:'ฟรี');
-          detailHtml+='<div style="display:flex;justify-content:space-between;font-size:10px;color:#5A8C6A;padding:1px 0">'+
-            '<span>• '+d.lb+'</span><span>'+prTxt+'</span></div>';
+          var prTxt=d.type==='fixed'?
+            '<span style="color:#1B6B3A;font-weight:700">฿'+d.pr+'</span>':
+            (d.pr>0?'<span style="color:#5A8C6A">+฿'+d.pr+'</span>':'');
+          optRows+='<div style="display:flex;justify-content:space-between;align-items:center;'+
+            'padding:3px 8px;background:#F0FBF4;border-radius:5px;margin-top:3px">'+
+            '<span style="font-size:11px;color:#2E5C40">• '+d.lb+'</span>'+prTxt+'</div>';
         });
       } else if(c.sb){
-        detailHtml='<div class="ci-sb">'+c.sb+'</div>';
+        optRows='<div style="font-size:10px;color:#5A8C6A;margin-top:2px;padding:0 2px">'+c.sb+'</div>';
       }
-      h+='<div class="ci">'+
-        '<div class="ci-ic">'+c.em+'</div>'+
-        '<div class="ci-in">'+
-          '<div class="ci-nm">'+c.nm+'</div>'+
-          detailHtml+
-        '</div>'+
-        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">'+
-          '<div class="qc">'+
+      // มีตัวเลือก = มีปุ่มแก้ไข
+      var hasOpts=(c.details&&c.details.length)||c.sb;
+      h+='<div style="padding:10px 0;border-bottom:1px solid #E4F2E8">'+
+        '<div style="display:flex;align-items:center;gap:8px">'+
+          '<div class="ci-ic">'+c.em+'</div>'+
+          '<div style="flex:1;min-width:0">'+
+            '<div class="ci-nm">'+c.nm+'</div>'+
+          '</div>'+
+          // ปุ่มแก้ไข (ถ้ามีตัวเลือก)
+          (hasOpts?'<button onclick="editCartItem('+c.k+')" style="background:none;border:1.5px solid #C8E8CC;border-radius:7px;padding:4px 8px;font-size:10px;font-weight:700;color:#2E8B57;cursor:pointer;flex-shrink:0">✏️ แก้</button>':'')+
+          // ปุ่ม +/- และราคา
+          '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'+
             '<button class="qb" onclick="chgCart('+c.k+',-1)">−</button>'+
             '<span class="qn">'+c.qty+'</span>'+
             '<button class="qb" onclick="chgCart('+c.k+',1)">+</button>'+
           '</div>'+
-          '<div style="font-size:13px;font-weight:700;color:#1B6B3A">฿'+(c.pr*c.qty).toLocaleString()+'</div>'+
+          '<div style="font-size:13px;font-weight:700;color:#1B6B3A;min-width:44px;text-align:right">฿'+(c.pr*c.qty).toLocaleString()+'</div>'+
+          // ปุ่มลบ
+          '<button onclick="removeCartItem('+c.k+')" style="background:none;border:none;color:#C0392B;font-size:18px;cursor:pointer;flex-shrink:0;padding:0 2px">×</button>'+
         '</div>'+
+        (optRows?'<div style="margin-left:40px">'+optRows+'</div>':'')+
       '</div>';
     });
   }
@@ -1044,7 +1073,9 @@ function confirmPK(){
     });
     var sb=parts.join(', ');
     var finalPrice=(fixedPrice!==null?fixedPrice:gp(m))+extraAdd;
-    pushCartEx(m,sb,finalPrice,details);
+    // ถ้า edit ให้เพิ่ม qty ตามเดิม
+    for(var qi=0;qi<pkEditQty;qi++){pushCartEx(m,sb,finalPrice,details);}
+    pkEditQty=1;
   } else {
     pushCart(m,'','');
   }
@@ -1067,7 +1098,9 @@ function confirmOrder(){
     date:n.toISOString().slice(0,10),
     time:n.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}),
     ts:n.getTime(),
-    items:cart.map(function(c){return{name:c.nm,qty:c.qty,price:c.pr,sub:c.sb};})
+  items:cart.map(function(c){
+    return{name:c.nm,qty:c.qty,price:c.pr,sub:c.sb,details:c.details||[]};
+  })
   };
   // บันทึก localStorage ก่อน
   orders.unshift(order);
@@ -1206,13 +1239,26 @@ function renderOrderTable(os){
   var chLb={walkin:'หน้าร้าน',lineman:'LINE MAN',grab:'Grab'},h='';
   os.forEach(function(o){
     var cancelled=o.cancelled;
+    // สร้าง items text พร้อมตัวเลือก
+    var itemsHtml=o.items.map(function(it){
+      var txt=it.name+' x'+it.qty;
+      if(it.details&&it.details.length){
+        var opts=it.details.map(function(d){
+          return d.lb+(d.pr>0&&d.type!=='fixed'?' +฿'+d.pr:'');
+        }).join(', ');
+        txt+='<div style="font-size:10px;color:#7A9A82;margin-top:1px">'+opts+'</div>';
+      } else if(it.sub){
+        txt+='<div style="font-size:10px;color:#7A9A82;margin-top:1px">'+it.sub+'</div>';
+      }
+      return '<div style="margin-bottom:3px">'+txt+'</div>';
+    }).join('');
     h+='<tr class="'+(cancelled?'cancelled':'')+'">';
     h+='<td><span class="ono">#'+o.no+'</span></td>';
-    h+='<td>'+o.time+'</td>';
+    h+='<td style="white-space:nowrap">'+o.time+'</td>';
     h+='<td><span class="bdg '+(o.channel||'walkin')+'">'+(chLb[o.channel]||'หน้าร้าน')+'</span></td>';
     h+='<td><span class="bdg '+(o.pay||'cash')+'">'+(o.pay==='cash'?'เงินสด':'QR')+'</span></td>';
-    h+='<td style="font-size:10px;color:#7A9A82">'+o.items.map(function(it){return it.name+'x'+it.qty;}).join(', ')+'</td>';
-    h+='<td style="font-weight:700;color:'+(cancelled?'#C0392B':'#1B6B3A')+'">'+(cancelled?'<s>':'')+'฿'+o.total+(cancelled?'</s> ❌':'')+'</td>';
+    h+='<td style="font-size:11px;color:#1A3528">'+itemsHtml+'</td>';
+    h+='<td style="font-weight:700;color:'+(cancelled?'#C0392B':'#1B6B3A')+';white-space:nowrap">'+(cancelled?'<s>':'')+'฿'+o.total+(cancelled?'</s> ❌':'')+'</td>';
     h+='<td>'+(cancelled?'<span style="font-size:10px;color:#C0392B">ยกเลิกแล้ว</span>':'<button class="o-cancel" onclick="cancelOrder(\''+o.no+'\',\''+o.date+'\')">ยกเลิก</button>')+'</td>';
     h+='</tr>';
   });
@@ -1554,6 +1600,35 @@ initData();
 bCats();
 rMenu();
 rCart();
+
+// Auto-refresh ทุก 30 วินาที — sync เมนูและออเดอร์ข้ามเครื่อง
+setInterval(function(){
+  // sync เมนูใหม่จาก Sheets (เผื่ออีกเครื่องเพิ่มเมนู)
+  callApi({action:'getMenu'},function(err,res){
+    if(res&&res.ok&&res.data&&res.data.length){
+      var changed=JSON.stringify(res.data)!==JSON.stringify(menu);
+      if(changed){menu=res.data;lsS('menu',menu);bCats();rMenu();}
+    }
+  });
+  // ถ้า Dashboard เปิดอยู่ ให้ refresh ข้อมูล
+  if(isDash){rDash();}
+  // อัปเดตสถานะยกเลิกใน localStorage จาก Sheets
+  var today=new Date().toISOString().slice(0,10);
+  callApi({action:'getOrders',from:today,to:today},function(err,res){
+    if(res&&res.ok&&res.data&&res.data.length){
+      var localOrders=lsG('orders')||[];
+      var sheetsMap={};
+      res.data.forEach(function(o){sheetsMap[String(o.no)]=o;});
+      var updated=false;
+      localOrders.forEach(function(o){
+        if(sheetsMap[String(o.no)]&&sheetsMap[String(o.no)].cancelled!==o.cancelled){
+          o.cancelled=sheetsMap[String(o.no)].cancelled;updated=true;
+        }
+      });
+      if(updated)lsS('orders',localOrders);
+    }
+  });
+},30000);
 </script>
 
 </body>
