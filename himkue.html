@@ -399,7 +399,12 @@ gap:5px;z-index:90;pointer-events:none}
 color:#fff;display:flex;align-items:center;gap:6px;
 box-shadow:0 4px 14px rgba(0,0,0,.2)}
 
-::-webkit-scrollbar{width:4px}
+.otbl tr.cancelled td{opacity:.4;text-decoration:line-through}
+.otbl tr.cancelled .o-cancel{display:none}
+.o-cancel{background:none;border:1.5px solid #C0392B;border-radius:7px;
+padding:3px 8px;font-size:10px;font-weight:700;color:#C0392B;cursor:pointer;
+font-family:-apple-system,sans-serif;white-space:nowrap}
+.o-cancel:active{background:#FDECEA}
 ::-webkit-scrollbar-thumb{background:#C8E8CC;border-radius:6px}
 </style>
 
@@ -538,7 +543,7 @@ box-shadow:0 4px 14px rgba(0,0,0,.2)}
 
 <div class="dv" id="vorders">
   <div class="pbar"><button class="prb on" onclick="sp('day',this)">วันนี้</button><button class="prb" onclick="sp('week',this)">7 วัน</button><button class="prb" onclick="sp('month',this)">เดือน</button></div>
-  <div class="sec"><div class="sec-t">🧾 ประวัติออเดอร์</div><div style="overflow-x:auto"><table class="otbl"><thead><tr><th>#</th><th>เวลา</th><th>ช่อง</th><th>ชำระ</th><th>รายการ</th><th>฿</th></tr></thead><tbody id="oBody"></tbody></table></div></div>
+  <div class="sec"><div class="sec-t">🧾 ประวัติออเดอร์</div><div style="overflow-x:auto"><table class="otbl"><thead><tr><th>#</th><th>เวลา</th><th>ช่อง</th><th>ชำระ</th><th>รายการ</th><th>฿</th><th></th></tr></thead><tbody id="oBody"></tbody></table></div></div>
 </div>
 
 <div class="dv" id="vmenu">
@@ -1127,9 +1132,42 @@ function rOR(){
   callApi({action:'getOrders',from:dr.from,to:dr.to},function(err,res){
     var os=(res&&res.ok&&res.data)?res.data:orders.filter(function(o){return o.date>=dr.from&&o.date<=dr.to;});
     var chLb={walkin:'หน้าร้าน',lineman:'LINE MAN',grab:'Grab'},h='';
-    os.forEach(function(o){h+='<tr><td><span class="ono">#'+o.no+'</span></td><td>'+o.time+'</td><td><span class="bdg '+(o.channel||'walkin')+'">'+(chLb[o.channel]||'หน้าร้าน')+'</span></td><td><span class="bdg '+(o.pay||'cash')+'">'+(o.pay==='cash'?'เงินสด':'QR')+'</span></td><td style="font-size:10px;color:#7A9A82">'+o.items.map(function(it){return it.name+'x'+it.qty;}).join(', ')+'</td><td style="font-weight:700;color:#1B6B3A">฿'+o.total+'</td></tr>';});
-    document.getElementById('oBody').innerHTML=h||'<tr><td colspan="6" style="text-align:center;color:#7A9A82;padding:12px;font-size:11px">ยังไม่มีออเดอร์</td></tr>';
+    os.forEach(function(o){
+      var cancelled=o.cancelled;
+      h+='<tr class="'+(cancelled?'cancelled':'')+'">';
+      h+='<td><span class="ono">#'+o.no+'</span></td>';
+      h+='<td>'+o.time+'</td>';
+      h+='<td><span class="bdg '+(o.channel||'walkin')+'">'+(chLb[o.channel]||'หน้าร้าน')+'</span></td>';
+      h+='<td><span class="bdg '+(o.pay||'cash')+'">'+(o.pay==='cash'?'เงินสด':'QR')+'</span></td>';
+      h+='<td style="font-size:10px;color:#7A9A82">'+o.items.map(function(it){return it.name+'x'+it.qty;}).join(', ')+'</td>';
+      h+='<td style="font-weight:700;color:'+(cancelled?'#C0392B':'#1B6B3A')+'">'+(cancelled?'<s>':'')+'฿'+o.total+(cancelled?'</s> ❌':'')+'</td>';
+      h+='<td>'+(cancelled?'<span style="font-size:10px;color:#C0392B">ยกเลิกแล้ว</span>':'<button class="o-cancel" onclick="cancelOrder(\''+o.no+'\',\''+o.date+'\')">ยกเลิก</button>')+'</td>';
+      h+='</tr>';
+    });
+    document.getElementById('oBody').innerHTML=h||'<tr><td colspan="7" style="text-align:center;color:#7A9A82;padding:12px;font-size:11px">ยังไม่มีออเดอร์</td></tr>';
   });
+}
+
+function cancelOrder(no,date){
+  if(!confirm('ยกเลิกออเดอร์ #'+no+' ?'))return;
+  // อัปเดต local orders
+  var found=false;
+  for(var i=0;i<orders.length;i++){
+    if(String(orders[i].no)===String(no)){orders[i].cancelled=true;found=true;break;}
+  }
+  if(!found){
+    // ถ้าไม่มีใน local ให้สร้าง stub ไว้
+    orders.push({no:no,date:date,cancelled:true,total:0,items:[],channel:'walkin',pay:'cash',time:''});
+  }
+  lsS('orders',orders);
+  // sync ขึ้น Sheets
+  callApi({action:'cancelOrder',no:no,date:date},function(err,res){
+    if(res&&res.ok)setSyncOk(true);
+  });
+  toast('✅','ยกเลิกออเดอร์ #'+no+' แล้ว','g');
+  rOR();
+  // refresh ยอดด้วยถ้าเปิดอยู่
+  if(activeDV==='overview')rOV();
 }
 
 function rMD(){
