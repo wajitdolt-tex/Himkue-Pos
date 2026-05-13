@@ -1190,11 +1190,28 @@ function pushCartEx(m,sb,finalPrice,details){
 /* ORDER */
 function confirmOrder(){
   if(!cart.length)return;
-  ordNo++;lsS('ordno',ordNo);
+  var btn=document.getElementById('cfm');
+  btn.disabled=true;btn.textContent='⏳ กำลังบันทึก...';
+
+  // ดึง ordNo ล่าสุดจาก Sheets เพื่อป้องกันเลขซ้ำข้ามเครื่อง
+  callApi({action:'getNextOrderNo'},function(err,res){
+    var nextNo;
+    if(res&&res.ok&&res.nextNo){
+      nextNo=res.nextNo;
+    } else {
+      // fallback: ใช้ timestamp เป็น unique id
+      nextNo=Date.now();
+    }
+    ordNo=nextNo;lsS('ordno',ordNo);
+    doConfirmOrder(nextNo);
+    btn.disabled=false;btn.textContent='✅ ยืนยันออเดอร์';
+  });
+}
+function doConfirmOrder(no){
   var tot=calcNet();
   var n=new Date();
   var order={
-    no:ordNo,channel:ch,pay:pay,total:tot,
+    no:no,channel:ch,pay:pay,total:tot,
     date:n.toISOString().slice(0,10),
     time:n.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}),
     ts:n.getTime(),
@@ -1202,31 +1219,22 @@ function confirmOrder(){
       return{name:c.nm,qty:c.qty,price:c.pr,sub:c.sb,details:c.details||[]};
     })
   };
-  // บันทึก localStorage ก่อน
   orders.unshift(order);
   if(orders.length>500)orders=orders.slice(0,500);
   lsS('orders',orders);
-
-  // ส่งขึ้น Sheets — ตัด details ออกเพื่อให้ URL ไม่ยาวเกิน
   var orderForSheets={
     no:order.no,channel:order.channel,pay:order.pay,total:order.total,
     date:order.date,time:order.time,ts:order.ts,
     items:order.items.map(function(it){
-      // เก็บแค่ชื่อ ราคา จำนวน และ sub (ตัวเลือกย่อ)
       return{name:it.name,qty:it.qty,price:it.price,sub:it.sub||''};
     })
   };
   callApi({action:'addOrder',order:JSON.stringify(orderForSheets)},function(err,res){
-    if(res&&res.ok){
-      setSyncOk(true);
-    } else {
-      // บันทึกไม่ได้ แต่ local มีแล้ว แจ้งเตือนเบาๆ
-      toast('⚠️','บันทึกลง Sheets ไม่ได้ (มีใน local)','r');
-    }
+    if(res&&res.ok){setSyncOk(true);}
+    else{toast('⚠️','บันทึกลง Sheets ไม่ได้','r');}
   });
-
   var rows=cart.map(function(c){return c.nm+(c.sb?' ('+c.sb+')':'')+' x'+c.qty;}).join('<br>');
-  document.getElementById('sucD').innerHTML='<b>#'+ordNo+'</b><br>'+rows+'<br><br>ช่อง: '+CHI[ch].lb+'<br>ยอด <b>฿'+tot+'</b>';
+  document.getElementById('sucD').innerHTML='<b>#'+no+'</b><br>'+rows+'<br><br>ช่อง: '+CHI[ch].lb+'<br>ยอด <b>฿'+tot+'</b>';
   document.getElementById('sucMod').classList.add('on');
   clearCart();closeSheet();
 }
