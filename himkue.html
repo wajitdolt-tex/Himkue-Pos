@@ -876,6 +876,7 @@ function togOpt(el,key,si,oi,secName,lb,ex,priceMode){
   if(pkOpts[key]){delete pkOpts[key];el.classList.remove('on');}
   else{pkOpts[key]={sec:si,oi:oi,lb:lb,ex:ex,type:'check',secName:secName,priceMode:priceMode||'add'};el.classList.add('on');}
 }
+function closePK(){document.getElementById('pkbd').classList.remove('on');document.getElementById('pkbox').classList.remove('on');}
 function confirmPK(){
   var m=null;menu.forEach(function(x){if(x.id==pkId)m=x;});if(!m)return;
   var opts=menuOpts[m.id]||[];
