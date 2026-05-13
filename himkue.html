@@ -1881,6 +1881,34 @@ bCats();
 rMenu();
 rCart();
 
+// โหลดข้อมูลจาก Sheets ตอนเปิดเว็บ — สำคัญสำหรับเครื่องใหม่ที่ไม่มี localStorage
+(function bootSync(){
+  // เมนู
+  callApi({action:'getMenu'},function(err,res){
+    if(res&&res.ok&&res.data&&res.data.length){
+      menu=res.data;lsS('menu',menu);bCats();rMenu();
+    }
+  });
+  // ออเดอร์วันนี้
+  var today=new Date().toISOString().slice(0,10);
+  callApi({action:'getOrders',from:today,to:today},function(err,res){
+    if(res&&res.ok&&res.data&&res.data.length){
+      var local=lsG('orders')||[];
+      var localNos={};local.forEach(function(o){localNos[String(o.no)]=true;});
+      var merged=local.slice();
+      res.data.forEach(function(o){
+        if(!localNos[String(o.no)]){merged.unshift(o);}
+        else{merged.forEach(function(lo){if(String(lo.no)===String(o.no))lo.cancelled=o.cancelled;});}
+      });
+      orders=merged;lsS('orders',merged);
+    }
+  });
+  // สต็อก
+  callApi({action:'getStock'},function(err,res){
+    if(res&&res.ok&&res.data){stock=res.data;lsS('stock',res.data);}
+  });
+})();
+
 // Auto-refresh ทุก 30 วินาที — sync เมนูและออเดอร์ข้ามเครื่อง
 setInterval(function(){
   // sync เมนูใหม่จาก Sheets (เผื่ออีกเครื่องเพิ่มเมนู)
