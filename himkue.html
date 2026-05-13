@@ -481,7 +481,13 @@ font-family:-apple-system,sans-serif;white-space:nowrap}
 <div id="sumMod" onclick="closeSum()">
   <div id="sumBox" onclick="event.stopPropagation()">
     <div class="sum-drag"></div>
-    <div class="sum-ttl">📊 สรุปยอดวันนี้</div>
+    <div class="sum-ttl">📊 สรุปยอด</div>
+    <!-- date picker -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px">
+      <button onclick="sumChangeDay(-1)" style="background:none;border:1.5px solid #C8E8CC;border-radius:8px;padding:6px 12px;font-size:16px;cursor:pointer;color:#2E8B57">‹</button>
+      <input type="date" id="sumDate" style="border:1.5px solid #C8E8CC;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700;color:#1B6B3A;background:#EEF8F2;outline:none;text-align:center" onchange="loadSumDate(this.value)">
+      <button onclick="sumChangeDay(1)" style="background:none;border:1.5px solid #C8E8CC;border-radius:8px;padding:6px 12px;font-size:16px;cursor:pointer;color:#2E8B57">›</button>
+    </div>
     <div id="sumContent"></div>
     <button class="sum-close" onclick="closeSum()">ปิด</button>
   </div>
@@ -1531,146 +1537,61 @@ function saveSt(){
 
 /* SUMMARY */
 function openSum(){
-  document.getElementById('sumMod').classList.add('on');
-  document.getElementById('sumContent').innerHTML='<div style="text-align:center;padding:20px;color:#7A9A82;font-size:12px">⏳ กำลังโหลด...</div>';
   var today=new Date().toISOString().slice(0,10);
-
-  function renderSum(allOrders){
-    var os=allOrders.filter(function(o){return o.date===today&&!o.cancelled;});
-    if(!os.length){
-      document.getElementById('sumContent').innerHTML=
-        '<div style="text-align:center;padding:24px;color:#7A9A82;font-size:13px">ยังไม่มีออเดอร์วันนี้</div>';
-      return;
-    }
-
-    // รวมยอดทั้งหมด
-    var tot=0,cnt=os.length,wt=0,lt=0,gt=0;
-    os.forEach(function(o){
-      tot+=o.total;
-      if(o.channel==='walkin')wt+=o.total;
-      else if(o.channel==='lineman')lt+=o.total;
-      else if(o.channel==='grab')gt+=o.total;
-    });
-    var h='';
-
-    // รวมสินค้าแบบละเอียด — แยกตาม ชื่อเมนู + ตัวเลือก
-    var itemMap={}; // key = "ชื่อเมนู|ตัวเลือก" → {name, opts, qty, lineTotal}
-    os.forEach(function(o){
-      o.items.forEach(function(it){
-        // ราคาหลัก (ขนาด/ธรรมดา/พิเศษ)
-        var mainOpt='';var mainPr=it.price;var extras=[];
-        if(it.details&&it.details.length){
-          it.details.forEach(function(d){
-            if(d.type==='fixed'){mainOpt=d.lb;mainPr=d.pr;}
-            else if(d.pr>0){extras.push({lb:d.lb,pr:d.pr,qty:it.qty});}
-          });
-        }
-        // เมนูหลัก
-        var mk=it.name+'|'+(mainOpt||'');
-        if(!itemMap[mk])itemMap[mk]={name:it.name,opt:mainOpt,qty:0,lineTotal:0,isMain:true};
-        itemMap[mk].qty+=it.qty;
-        itemMap[mk].lineTotal+=mainPr*it.qty;
-        // extras แยกบรรทัด
-        extras.forEach(function(ex){
-          var ek='__extra__|'+ex.lb;
-          if(!itemMap[ek])itemMap[ek]={name:ex.lb,opt:'',qty:0,lineTotal:0,isExtra:true};
-          itemMap[ek].qty+=ex.qty;
-          itemMap[ek].lineTotal+=ex.pr*ex.qty;
-        });
-      });
-    });
-
-    // ยอดรวม
-    h+='<div class="sum-row big"><span>ยอดรวมวันนี้</span><span>฿'+tot.toLocaleString()+'</span></div>';
-    h+='<div class="sum-row"><span>ออเดอร์</span><span style="font-weight:700">'+cnt+' ออเดอร์</span></div>';
-
-    // แยกยอดตามช่องทางชำระเงิน
-    var cash=0,qr=0;
-    os.forEach(function(o){if(o.pay==='cash')cash+=o.total;else qr+=o.total;});
-    h+='<div class="sum-sec-lbl">ยอดแยกตามการชำระ</div>';
-    h+='<div style="background:#EEF8F2;border-radius:10px;overflow:hidden;border:1px solid #C8E8CC;margin-bottom:8px">';
-    if(cash)h+='<div style="display:flex;justify-content:space-between;padding:9px 12px;border-bottom:1px solid #D0F0DC">'+
-      '<span style="font-size:13px;display:flex;align-items:center;gap:6px">💵 <b>เงินสด</b></span>'+
-      '<span style="font-size:15px;font-weight:800;color:#1B6B3A">฿'+cash.toLocaleString()+'</span></div>';
-    if(qr)h+='<div style="display:flex;justify-content:space-between;padding:9px 12px">'+
-      '<span style="font-size:13px;display:flex;align-items:center;gap:6px">📱 <b>QR / โอน</b></span>'+
-      '<span style="font-size:15px;font-weight:800;color:#1B6B3A">฿'+qr.toLocaleString()+'</span></div>';
-    h+='</div>';
-
-    // แยกยอดตามช่องทางขาย
-    if(wt||lt||gt){
-      h+='<div class="sum-sec-lbl">ยอดแยกตามช่องทางขาย</div>';
-      h+='<div style="background:#EEF8F2;border-radius:10px;overflow:hidden;border:1px solid #C8E8CC;margin-bottom:8px">';
-      if(wt)h+='<div style="display:flex;justify-content:space-between;padding:9px 12px;border-bottom:1px solid #D0F0DC">'+
-        '<span style="font-size:13px;display:flex;align-items:center;gap:6px">🏪 <b>หน้าร้าน</b></span>'+
-        '<span style="font-size:15px;font-weight:800;color:#1B6B3A">฿'+wt.toLocaleString()+'</span></div>';
-      if(lt)h+='<div style="display:flex;justify-content:space-between;padding:9px 12px;border-bottom:1px solid #D0F0DC">'+
-        '<span style="font-size:13px;display:flex;align-items:center;gap:6px">🟢 <b>LINE MAN</b></span>'+
-        '<span style="font-size:15px;font-weight:800;color:#1B6B3A">฿'+lt.toLocaleString()+'</span></div>';
-      if(gt)h+='<div style="display:flex;justify-content:space-between;padding:9px 12px">'+
-        '<span style="font-size:13px;display:flex;align-items:center;gap:6px">🟢 <b>Grab</b></span>'+
-        '<span style="font-size:15px;font-weight:800;color:#1B6B3A">฿'+gt.toLocaleString()+'</span></div>';
-      h+='</div>';
-    }
-
-    // รายการสินค้าละเอียด
-    h+='<div class="sum-sec-lbl">รายการสินค้าวันนี้</div>';
-    h+='<div style="background:#EEF8F2;border-radius:10px;overflow:hidden;border:1px solid #C8E8CC">';
-    // หัวตาราง
-    h+='<div style="display:flex;justify-content:space-between;padding:7px 12px;background:#D0F0DC;font-size:10px;font-weight:700;color:#1B6B3A">'+
-       '<span>รายการ</span><span style="display:flex;gap:20px"><span style="min-width:30px;text-align:center">จำนวน</span><span style="min-width:52px;text-align:right">ยอดรวม</span></span></div>';
-
-    // เมนูหลัก
-    var mains=Object.keys(itemMap).filter(function(k){return itemMap[k].isMain;});
-    mains.sort(function(a,b){return itemMap[b].lineTotal-itemMap[a].lineTotal;});
-    mains.forEach(function(k,idx){
-      var it=itemMap[k];
-      var bg=idx%2===0?'#fff':'#F5FCF7';
-      var label=it.name+(it.opt?' <span style="color:#5A8C6A;font-size:10px">('+it.opt+')</span>':'');
-      h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:'+bg+';border-bottom:1px solid #E4F2E8">'+
-         '<span style="font-size:12px;font-weight:600;color:#1A3528">'+label+'</span>'+
-         '<span style="display:flex;gap:20px;flex-shrink:0">'+
-           '<span style="min-width:30px;text-align:center;font-size:12px;font-weight:700;color:#2E8B57">x'+it.qty+'</span>'+
-           '<span style="min-width:52px;text-align:right;font-size:12px;font-weight:700;color:#1B6B3A">฿'+it.lineTotal.toLocaleString()+'</span>'+
-         '</span></div>';
-    });
-
-    // extras (รายการเสริม รวมทุกออเดอร์)
-    var extras=Object.keys(itemMap).filter(function(k){return itemMap[k].isExtra;});
-    if(extras.length){
-      h+='<div style="padding:6px 12px;background:#FFFDE8;font-size:10px;font-weight:700;color:#7A5000;border-top:2px solid #C8E8CC">รายการเสริม</div>';
-      extras.forEach(function(k,idx){
-        var it=itemMap[k];
-        var bg=idx%2===0?'#FFFEF5':'#FFFDE8';
-        h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 12px;background:'+bg+';border-bottom:1px solid #F5EDD0">'+
-           '<span style="font-size:11px;color:#5A4000">• '+it.name+'</span>'+
-           '<span style="display:flex;gap:20px;flex-shrink:0">'+
-             '<span style="min-width:30px;text-align:center;font-size:11px;font-weight:700;color:#7A5000">x'+it.qty+'</span>'+
-             '<span style="min-width:52px;text-align:right;font-size:11px;font-weight:700;color:#7A5000">+฿'+it.lineTotal.toLocaleString()+'</span>'+
-           '</span></div>';
-      });
-    }
-    h+='</div>';
-    document.getElementById('sumContent').innerHTML=h;
-  }
-
-  // local ก่อน
+  document.getElementById('sumMod').classList.add('on');
+  document.getElementById('sumDate').value=today;
+  loadSumDate(today);
+}
+function sumChangeDay(d){
+  var cur=document.getElementById('sumDate').value;
+  var dt=new Date(cur);dt.setDate(dt.getDate()+d);
+  document.getElementById('sumDate').value=dt.toISOString().slice(0,10);
+  loadSumDate(dt.toISOString().slice(0,10));
+}
+function loadSumDate(dateStr){
+  document.getElementById('sumContent').innerHTML='<div style="text-align:center;padding:20px;color:#7A9A82;font-size:12px">⏳ กำลังโหลด...</div>';
+  var isToday=dateStr===new Date().toISOString().slice(0,10);
   var localOrders=lsG('orders')||[];
-  renderSum(localOrders);
-  // sync จาก Sheets
-  callApi({action:'getOrders',from:today,to:today},function(err,res){
+  var localDay=localOrders.filter(function(o){return o.date===dateStr&&!o.cancelled;});
+  if(localDay.length)renderSumData(localOrders,dateStr);
+  callApi({action:'getOrders',from:dateStr,to:dateStr},function(err,res){
     if(res&&res.ok&&res.data){
-      var sheetsMap={};
-      res.data.forEach(function(o){sheetsMap[String(o.no)]=o.cancelled;});
-      var merged=localOrders.map(function(o){
-        if(sheetsMap[String(o.no)]!==undefined)o.cancelled=sheetsMap[String(o.no)];
-        return o;
-      });
-      lsS('orders',merged);
-      renderSum(merged);
+      var sm={};res.data.forEach(function(o){sm[String(o.no)]=o.cancelled;});
+      var merged=localOrders.map(function(o){if(sm[String(o.no)]!==undefined)o.cancelled=sm[String(o.no)];return o;});
+      var ln={};localOrders.forEach(function(o){ln[String(o.no)]=true;});
+      res.data.forEach(function(o){if(!ln[String(o.no)])merged.push(o);});
+      if(isToday)lsS('orders',merged);
+      renderSumData(merged,dateStr);
+    } else if(!localDay.length){
+      document.getElementById('sumContent').innerHTML='<div style="text-align:center;padding:24px;color:#7A9A82;font-size:13px">ไม่มีออเดอร์ในวันที่นี้</div>';
     }
   });
 }
+function renderSumData(allOrders,dateStr){
+  var os=allOrders.filter(function(o){return o.date===dateStr&&!o.cancelled;});
+  if(!os.length){document.getElementById('sumContent').innerHTML='<div style="text-align:center;padding:24px;color:#7A9A82;font-size:13px">ไม่มีออเดอร์ในวันที่นี้</div>';return;}
+  var tot=0,cnt=os.length,wt=0,lt=0,gt=0,cash=0,qr=0;
+  os.forEach(function(o){tot+=o.total;if(o.channel==='walkin')wt+=o.total;else if(o.channel==='lineman')lt+=o.total;else if(o.channel==='grab')gt+=o.total;if(o.pay==='cash')cash+=o.total;else qr+=o.total;});
+  var itemMap={};
+  os.forEach(function(o){o.items.forEach(function(it){var mainOpt='';var mainPr=it.price;var extras=[];if(it.details&&it.details.length){it.details.forEach(function(d){if(d.type==='fixed'){mainOpt=d.lb;mainPr=d.pr;}else if(d.pr>0){extras.push({lb:d.lb,pr:d.pr,qty:it.qty});}});}var mk=it.name+'|'+(mainOpt||'');if(!itemMap[mk])itemMap[mk]={name:it.name,opt:mainOpt,qty:0,lineTotal:0,isMain:true};itemMap[mk].qty+=it.qty;itemMap[mk].lineTotal+=mainPr*it.qty;extras.forEach(function(ex){var ek='__extra__|'+ex.lb;if(!itemMap[ek])itemMap[ek]={name:ex.lb,opt:'',qty:0,lineTotal:0,isExtra:true};itemMap[ek].qty+=ex.qty;itemMap[ek].lineTotal+=ex.pr*ex.qty;});});});
+  var h='';
+  h+='<div class="sum-row big"><span>ยอดรวม</span><span>฿'+tot.toLocaleString()+'</span></div>';
+  h+='<div class="sum-row"><span>ออเดอร์</span><span style="font-weight:700">'+cnt+' ออเดอร์</span></div>';
+  h+='<div class="sum-sec-lbl">ยอดแยกตามการชำระ</div><div style="background:#EEF8F2;border-radius:10px;overflow:hidden;border:1px solid #C8E8CC;margin-bottom:8px">';
+  if(cash)h+='<div style="display:flex;justify-content:space-between;padding:9px 12px;border-bottom:1px solid #D0F0DC"><span style="font-size:13px">💵 <b>เงินสด</b></span><span style="font-size:15px;font-weight:800;color:#1B6B3A">฿'+cash.toLocaleString()+'</span></div>';
+  if(qr)h+='<div style="display:flex;justify-content:space-between;padding:9px 12px"><span style="font-size:13px">📱 <b>QR / โอน</b></span><span style="font-size:15px;font-weight:800;color:#1B6B3A">฿'+qr.toLocaleString()+'</span></div>';
+  h+='</div>';
+  if(wt||lt||gt){h+='<div class="sum-sec-lbl">ยอดแยกตามช่องทาง</div><div style="background:#EEF8F2;border-radius:10px;overflow:hidden;border:1px solid #C8E8CC;margin-bottom:8px">';if(wt)h+='<div style="display:flex;justify-content:space-between;padding:9px 12px;border-bottom:1px solid #D0F0DC"><span style="font-size:13px">🏪 <b>หน้าร้าน</b></span><span style="font-size:15px;font-weight:800;color:#1B6B3A">฿'+wt.toLocaleString()+'</span></div>';if(lt)h+='<div style="display:flex;justify-content:space-between;padding:9px 12px;border-bottom:1px solid #D0F0DC"><span style="font-size:13px">🟢 <b>LINE MAN</b></span><span style="font-size:15px;font-weight:800;color:#1B6B3A">฿'+lt.toLocaleString()+'</span></div>';if(gt)h+='<div style="display:flex;justify-content:space-between;padding:9px 12px"><span style="font-size:13px">🟢 <b>Grab</b></span><span style="font-size:15px;font-weight:800;color:#1B6B3A">฿'+gt.toLocaleString()+'</span></div>';h+='</div>';}
+  h+='<div class="sum-sec-lbl">รายการสินค้า</div><div style="background:#EEF8F2;border-radius:10px;overflow:hidden;border:1px solid #C8E8CC">';
+  h+='<div style="display:flex;justify-content:space-between;padding:7px 12px;background:#D0F0DC;font-size:10px;font-weight:700;color:#1B6B3A"><span>รายการ</span><span style="display:flex;gap:20px"><span style="min-width:30px;text-align:center">จำนวน</span><span style="min-width:52px;text-align:right">ยอดรวม</span></span></div>';
+  var mains=Object.keys(itemMap).filter(function(k){return itemMap[k].isMain;}).sort(function(a,b){return itemMap[b].lineTotal-itemMap[a].lineTotal;});
+  mains.forEach(function(k,idx){var it=itemMap[k];var bg=idx%2===0?'#fff':'#F5FCF7';var label=it.name+(it.opt?' <span style="color:#5A8C6A;font-size:10px">('+it.opt+')</span>':'')+'';h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:'+bg+';border-bottom:1px solid #E4F2E8"><span style="font-size:12px;font-weight:600;color:#1A3528">'+label+'</span><span style="display:flex;gap:20px;flex-shrink:0"><span style="min-width:30px;text-align:center;font-size:12px;font-weight:700;color:#2E8B57">x'+it.qty+'</span><span style="min-width:52px;text-align:right;font-size:12px;font-weight:700;color:#1B6B3A">฿'+it.lineTotal.toLocaleString()+'</span></span></div>';});
+  var extKeys=Object.keys(itemMap).filter(function(k){return itemMap[k].isExtra;});
+  if(extKeys.length){h+='<div style="padding:6px 12px;background:#FFFDE8;font-size:10px;font-weight:700;color:#7A5000;border-top:2px solid #C8E8CC">รายการเสริม</div>';extKeys.forEach(function(k,idx){var it=itemMap[k];var bg=idx%2===0?'#FFFEF5':'#FFFDE8';h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 12px;background:'+bg+';border-bottom:1px solid #F5EDD0"><span style="font-size:11px;color:#5A4000">• '+it.name+'</span><span style="display:flex;gap:20px;flex-shrink:0"><span style="min-width:30px;text-align:center;font-size:11px;font-weight:700;color:#7A5000">x'+it.qty+'</span><span style="min-width:52px;text-align:right;font-size:11px;font-weight:700;color:#7A5000">+฿'+it.lineTotal.toLocaleString()+'</span></span></div>';});}
+  h+='</div>';
+  document.getElementById('sumContent').innerHTML=h;
+}
+
 function closeSum(){document.getElementById('sumMod').classList.remove('on');}
 
 /* TOAST */
