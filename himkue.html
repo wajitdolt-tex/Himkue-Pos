@@ -897,6 +897,37 @@ function pk(k){
 function pdel(){if(pinBuf.length>0){pinBuf=pinBuf.slice(0,-1);for(var i=0;i<4;i++)document.getElementById('pd'+i).classList.toggle('on',i<pinBuf.length);}}
 
 /* MODE */
+/* SYNC จาก Sheets — ใช้ร่วมกันทุกหน้า */
+function syncFromSheets(cb){
+  var done={menu:false,orders:false,stock:false};
+  function check(){if(done.menu&&done.orders&&done.stock&&cb)cb();}
+
+  callApi({action:'getMenu'},function(err,res){
+    if(res&&res.ok&&res.data&&res.data.length){menu=res.data;lsS('menu',menu);bCats();rMenu();}
+    done.menu=true;check();
+  });
+
+  var today=new Date().toISOString().slice(0,10);
+  callApi({action:'getOrders',from:today,to:today},function(err,res){
+    if(res&&res.ok&&res.data&&res.data.length){
+      var local=lsG('orders')||[];
+      var localNos={};local.forEach(function(o){localNos[String(o.no)]=true;});
+      var merged=local.slice();
+      res.data.forEach(function(o){
+        if(!localNos[String(o.no)]){merged.unshift(o);}
+        else{merged.forEach(function(lo){if(String(lo.no)===String(o.no)){lo.cancelled=o.cancelled;}});}
+      });
+      orders=merged;lsS('orders',merged);
+    }
+    done.orders=true;check();
+  });
+
+  callApi({action:'getStock'},function(err,res){
+    if(res&&res.ok&&res.data){stock=res.data;lsS('stock',stock);}
+    done.stock=true;check();
+  });
+}
+
 function showDash(){
   document.getElementById('chRow').style.display='none';
   document.getElementById('dashNav').style.display='flex';
@@ -908,11 +939,8 @@ function showDash(){
   document.getElementById('sumBtn').style.display='none';
   document.querySelectorAll('.dv').forEach(function(v){v.classList.remove('on');});
   document.getElementById('v'+activeDV).classList.add('on');
-  // sync stock จาก Sheets
-  callApi({action:'getStock'},function(err,res){
-    if(res&&res.ok&&res.data){stock=res.data;lsS('stock',stock);}
-  });
-  rDash();
+  // sync แล้วค่อย render
+  syncFromSheets(function(){rDash();});
 }
 function showPOS(){
   isDash=false;
@@ -1634,22 +1662,28 @@ function openSum(){
 function sumChangeDay(d){
   var cur=document.getElementById('sumDate').value;
   var dt=new Date(cur);dt.setDate(dt.getDate()+d);
-  document.getElementById('sumDate').value=dt.toISOString().slice(0,10);
-  loadSumDate(dt.toISOString().slice(0,10));
+  var nd=dt.toISOString().slice(0,10);
+  document.getElementById('sumDate').value=nd;
+  loadSumDate(nd);
 }
 function loadSumDate(dateStr){
   document.getElementById('sumContent').innerHTML='<div style="text-align:center;padding:20px;color:#7A9A82;font-size:12px">⏳ กำลังโหลด...</div>';
   var isToday=dateStr===new Date().toISOString().slice(0,10);
   var localOrders=lsG('orders')||[];
   var localDay=localOrders.filter(function(o){return o.date===dateStr&&!o.cancelled;});
+  // แสดง local ก่อนถ้ามี
   if(localDay.length)renderSumData(localOrders,dateStr);
+  // ดึงจาก Sheets เสมอ (รวมเครื่องอื่น)
   callApi({action:'getOrders',from:dateStr,to:dateStr},function(err,res){
     if(res&&res.ok&&res.data){
       var sm={};res.data.forEach(function(o){sm[String(o.no)]=o.cancelled;});
-      var merged=localOrders.map(function(o){if(sm[String(o.no)]!==undefined)o.cancelled=sm[String(o.no)];return o;});
+      var merged=localOrders.map(function(o){
+        if(sm[String(o.no)]!==undefined)o.cancelled=sm[String(o.no)];
+        return o;
+      });
       var ln={};localOrders.forEach(function(o){ln[String(o.no)]=true;});
       res.data.forEach(function(o){if(!ln[String(o.no)])merged.push(o);});
-      if(isToday)lsS('orders',merged);
+      if(isToday){orders=merged;lsS('orders',merged);}
       renderSumData(merged,dateStr);
     } else if(!localDay.length){
       document.getElementById('sumContent').innerHTML='<div style="text-align:center;padding:24px;color:#7A9A82;font-size:13px">ไม่มีออเดอร์ในวันที่นี้</div>';
@@ -1881,60 +1915,13 @@ bCats();
 rMenu();
 rCart();
 
-// โหลดข้อมูลจาก Sheets ตอนเปิดเว็บ — สำคัญสำหรับเครื่องใหม่ที่ไม่มี localStorage
-(function bootSync(){
-  // เมนู
-  callApi({action:'getMenu'},function(err,res){
-    if(res&&res.ok&&res.data&&res.data.length){
-      menu=res.data;lsS('menu',menu);bCats();rMenu();
-    }
-  });
-  // ออเดอร์วันนี้
-  var today=new Date().toISOString().slice(0,10);
-  callApi({action:'getOrders',from:today,to:today},function(err,res){
-    if(res&&res.ok&&res.data&&res.data.length){
-      var local=lsG('orders')||[];
-      var localNos={};local.forEach(function(o){localNos[String(o.no)]=true;});
-      var merged=local.slice();
-      res.data.forEach(function(o){
-        if(!localNos[String(o.no)]){merged.unshift(o);}
-        else{merged.forEach(function(lo){if(String(lo.no)===String(o.no))lo.cancelled=o.cancelled;});}
-      });
-      orders=merged;lsS('orders',merged);
-    }
-  });
-  // สต็อก
-  callApi({action:'getStock'},function(err,res){
-    if(res&&res.ok&&res.data){stock=res.data;lsS('stock',res.data);}
-  });
-})();
+// โหลดข้อมูลจาก Sheets ตอนเปิดเว็บ — ทุกเครื่องเห็นข้อมูลเดียวกัน
+syncFromSheets(null);
 
-// Auto-refresh ทุก 30 วินาที — sync เมนูและออเดอร์ข้ามเครื่อง
+// Auto-refresh ทุก 30 วินาที — sync ข้ามเครื่อง
 setInterval(function(){
-  // sync เมนูใหม่จาก Sheets (เผื่ออีกเครื่องเพิ่มเมนู)
-  callApi({action:'getMenu'},function(err,res){
-    if(res&&res.ok&&res.data&&res.data.length){
-      var changed=JSON.stringify(res.data)!==JSON.stringify(menu);
-      if(changed){menu=res.data;lsS('menu',menu);bCats();rMenu();}
-    }
-  });
-  // ถ้า Dashboard เปิดอยู่ ให้ refresh ข้อมูล
-  if(isDash){rDash();}
-  // อัปเดตสถานะยกเลิกใน localStorage จาก Sheets
-  var today=new Date().toISOString().slice(0,10);
-  callApi({action:'getOrders',from:today,to:today},function(err,res){
-    if(res&&res.ok&&res.data&&res.data.length){
-      var localOrders=lsG('orders')||[];
-      var sheetsMap={};
-      res.data.forEach(function(o){sheetsMap[String(o.no)]=o;});
-      var updated=false;
-      localOrders.forEach(function(o){
-        if(sheetsMap[String(o.no)]&&sheetsMap[String(o.no)].cancelled!==o.cancelled){
-          o.cancelled=sheetsMap[String(o.no)].cancelled;updated=true;
-        }
-      });
-      if(updated)lsS('orders',localOrders);
-    }
+  syncFromSheets(function(){
+    if(isDash)rDash();
   });
 },30000);
 </script>
