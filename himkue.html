@@ -1049,37 +1049,50 @@ function dRange(){
   return{from:fr,to:to};
 }
 
+function calcOV(os){
+  var tot=0,cogs=0,wt=0,lt=0,gt=0;
+  var topMap={};
+  os.filter(function(o){return !o.cancelled;}).forEach(function(o){
+    tot+=o.total;
+    if(o.channel==='walkin')wt+=o.total;
+    else if(o.channel==='lineman')lt+=o.total;
+    else if(o.channel==='grab')gt+=o.total;
+    o.items.forEach(function(it){
+      var mn=null;menu.forEach(function(m){if(m.name===it.name)mn=m;});
+      if(mn&&mn.cost)cogs+=mn.cost*it.qty;
+      if(!topMap[it.name])topMap[it.name]={qty:0,rev:0,em:''};
+      topMap[it.name].qty+=it.qty;topMap[it.name].rev+=it.price*it.qty;
+      if(mn)topMap[it.name].em=mn.emoji;
+    });
+  });
+  var cnt=os.filter(function(o){return !o.cancelled;}).length;
+  var avg=cnt?Math.round(tot/cnt):0;
+  document.getElementById('statGrid').innerHTML=
+    mSt('💰','ยอดรวม','฿'+tot.toLocaleString(),'g','')+
+    mSt('📋','ออเดอร์',cnt+' ออเดอร์','gr','')+
+    mSt('🧠','เฉลี่ย/ออเดอร์','฿'+avg,'b','')+
+    mSt('📈','Gross Profit','฿'+(tot-cogs).toLocaleString(),'r',(tot-cogs)>=0?'pos':'neg');
+  var mx=Math.max(wt,lt,gt,1);
+  document.getElementById('chBars').innerHTML=mChB('walkin','🏪 หน้าร้าน',wt,mx)+mChB('lineman','🟢 LINE MAN',lt,mx)+mChB('grab','🟢 Grab',gt,mx);
+  var hrs=new Array(24).fill(0);
+  os.forEach(function(o){if(o.ts&&!o.cancelled)hrs[new Date(o.ts).getHours()]+=o.total;});
+  var mxH=Math.max.apply(null,hrs)||1,hw='';
+  for(var h=6;h<=22;h++){var p=Math.round(hrs[h]/mxH*100);hw+='<div class="hbw"><div class="hb'+(hrs[h]===Math.max.apply(null,hrs.slice(6,23))?' peak':'')+'" style="height:'+p+'%"></div><div class="hl">'+h+'</div></div>';}
+  document.getElementById('hourWrap').innerHTML=hw;
+  var sr=Object.keys(topMap).map(function(k){return{nm:k,qty:topMap[k].qty,rev:topMap[k].rev,em:topMap[k].em};}).sort(function(a,b){return b.qty-a.qty;}).slice(0,7);
+  var md=['🥇','🥈','🥉'],th='';
+  sr.forEach(function(s,i){th+='<div class="titem"><div class="ti-r">'+(md[i]||i+1)+'</div><div class="ti-e">'+(s.em||'🍜')+'</div><div class="ti-n">'+s.nm+'</div><div class="ti-c">x'+s.qty+'</div><div class="ti-v">฿'+s.rev.toLocaleString()+'</div></div>';});
+  document.getElementById('topItems').innerHTML=th||'<div style="padding:10px;text-align:center;color:#7A9A82;font-size:12px">ยังไม่มีข้อมูล</div>';
+}
+
 function rOV(){
   var dr=dRange();
+  // แสดง local ก่อนทันที
+  var localOrders=(lsG('orders')||[]).filter(function(o){return o.date>=dr.from&&o.date<=dr.to;});
+  if(localOrders.length)calcOV(localOrders);
+  // sync จาก Sheets
   callApi({action:'getOrders',from:dr.from,to:dr.to},function(err,res){
-    var os=(res&&res.ok&&res.data)?res.data:orders.filter(function(o){return o.date>=dr.from&&o.date<=dr.to;});
-    var tot=0,cogs=0,wt=0,lt=0,gt=0;
-    os.forEach(function(o){
-      tot+=o.total;
-      if(o.channel==='walkin')wt+=o.total;
-      else if(o.channel==='lineman')lt+=o.total;
-      else if(o.channel==='grab')gt+=o.total;
-      o.items.forEach(function(it){var mn=null;menu.forEach(function(m){if(m.name===it.name)mn=m;});if(mn&&mn.cost)cogs+=mn.cost*it.qty;});
-    });
-    var avg=os.length?Math.round(tot/os.length):0;
-    document.getElementById('statGrid').innerHTML=
-      mSt('💰','ยอดรวม','฿'+tot.toLocaleString(),'g','')+
-      mSt('📋','ออเดอร์',os.length+' ออเดอร์','gr','')+
-      mSt('🧠','เฉลี่ย/ออเดอร์','฿'+avg,'b','')+
-      mSt('📈','Gross Profit','฿'+(tot-cogs).toLocaleString(),'r',(tot-cogs)>=0?'pos':'neg');
-    var mx=Math.max(wt,lt,gt,1);
-    document.getElementById('chBars').innerHTML=mChB('walkin','🏪 หน้าร้าน',wt,mx)+mChB('lineman','🟢 LINE MAN',lt,mx)+mChB('grab','🟢 Grab',gt,mx);
-    var hrs=new Array(24).fill(0);
-    os.forEach(function(o){if(o.ts)hrs[new Date(o.ts).getHours()]+=o.total;});
-    var mxH=Math.max.apply(null,hrs)||1,hw='';
-    for(var h=6;h<=22;h++){var p=Math.round(hrs[h]/mxH*100);hw+='<div class="hbw"><div class="hb'+(hrs[h]===Math.max.apply(null,hrs.slice(6,23))?' peak':'')+'" style="height:'+p+'%"></div><div class="hl">'+h+'</div></div>';}
-    document.getElementById('hourWrap').innerHTML=hw;
-    var sm={};
-    os.forEach(function(o){o.items.forEach(function(it){if(!sm[it.name])sm[it.name]={qty:0,rev:0,em:''};sm[it.name].qty+=it.qty;sm[it.name].rev+=it.price*it.qty;menu.forEach(function(m){if(m.name===it.name)sm[it.name].em=m.emoji;});});});
-    var sr=Object.keys(sm).map(function(k){return{nm:k,qty:sm[k].qty,rev:sm[k].rev,em:sm[k].em};}).sort(function(a,b){return b.qty-a.qty;}).slice(0,7);
-    var md=['🥇','🥈','🥉'],th='';
-    sr.forEach(function(s,i){th+='<div class="titem"><div class="ti-r">'+(md[i]||i+1)+'</div><div class="ti-e">'+(s.em||'🍜')+'</div><div class="ti-n">'+s.nm+'</div><div class="ti-c">x'+s.qty+'</div><div class="ti-v">฿'+s.rev.toLocaleString()+'</div></div>';});
-    document.getElementById('topItems').innerHTML=th||'<div style="padding:10px;text-align:center;color:#7A9A82;font-size:12px">ยังไม่มีข้อมูล</div>';
+    if(res&&res.ok&&res.data&&res.data.length)calcOV(res.data);
   });
 }
 function mSt(ic,lb,v,col,cls){return '<div class="stc"><div class="stic '+col+'">'+ic+'</div><div><div class="stlb">'+lb+'</div><div class="stv '+(cls||'')+'">'+v+'</div></div></div>';}
@@ -1129,23 +1142,35 @@ function delExp(id){
 
 function rOR(){
   var dr=dRange();
+  // โหลด orders จาก localStorage ก่อนเสมอ (ใช้ fallback ทันที)
+  var localOrders=lsG('orders')||[];
+  var localFiltered=localOrders.filter(function(o){return o.date>=dr.from&&o.date<=dr.to;});
+  // แสดง local ก่อนรอ API
+  renderOrderTable(localFiltered);
+  // แล้วค่อย sync จาก Sheets
   callApi({action:'getOrders',from:dr.from,to:dr.to},function(err,res){
-    var os=(res&&res.ok&&res.data)?res.data:orders.filter(function(o){return o.date>=dr.from&&o.date<=dr.to;});
-    var chLb={walkin:'หน้าร้าน',lineman:'LINE MAN',grab:'Grab'},h='';
-    os.forEach(function(o){
-      var cancelled=o.cancelled;
-      h+='<tr class="'+(cancelled?'cancelled':'')+'">';
-      h+='<td><span class="ono">#'+o.no+'</span></td>';
-      h+='<td>'+o.time+'</td>';
-      h+='<td><span class="bdg '+(o.channel||'walkin')+'">'+(chLb[o.channel]||'หน้าร้าน')+'</span></td>';
-      h+='<td><span class="bdg '+(o.pay||'cash')+'">'+(o.pay==='cash'?'เงินสด':'QR')+'</span></td>';
-      h+='<td style="font-size:10px;color:#7A9A82">'+o.items.map(function(it){return it.name+'x'+it.qty;}).join(', ')+'</td>';
-      h+='<td style="font-weight:700;color:'+(cancelled?'#C0392B':'#1B6B3A')+'">'+(cancelled?'<s>':'')+'฿'+o.total+(cancelled?'</s> ❌':'')+'</td>';
-      h+='<td>'+(cancelled?'<span style="font-size:10px;color:#C0392B">ยกเลิกแล้ว</span>':'<button class="o-cancel" onclick="cancelOrder(\''+o.no+'\',\''+o.date+'\')">ยกเลิก</button>')+'</td>';
-      h+='</tr>';
-    });
-    document.getElementById('oBody').innerHTML=h||'<tr><td colspan="7" style="text-align:center;color:#7A9A82;padding:12px;font-size:11px">ยังไม่มีออเดอร์</td></tr>';
+    if(res&&res.ok&&res.data&&res.data.length){
+      renderOrderTable(res.data);
+    }
+    // ถ้า API ไม่ตอบ ข้อมูล local ขึ้นแล้ว ไม่ต้องทำอะไร
   });
+}
+
+function renderOrderTable(os){
+  var chLb={walkin:'หน้าร้าน',lineman:'LINE MAN',grab:'Grab'},h='';
+  os.forEach(function(o){
+    var cancelled=o.cancelled;
+    h+='<tr class="'+(cancelled?'cancelled':'')+'">';
+    h+='<td><span class="ono">#'+o.no+'</span></td>';
+    h+='<td>'+o.time+'</td>';
+    h+='<td><span class="bdg '+(o.channel||'walkin')+'">'+(chLb[o.channel]||'หน้าร้าน')+'</span></td>';
+    h+='<td><span class="bdg '+(o.pay||'cash')+'">'+(o.pay==='cash'?'เงินสด':'QR')+'</span></td>';
+    h+='<td style="font-size:10px;color:#7A9A82">'+o.items.map(function(it){return it.name+'x'+it.qty;}).join(', ')+'</td>';
+    h+='<td style="font-weight:700;color:'+(cancelled?'#C0392B':'#1B6B3A')+'">'+(cancelled?'<s>':'')+'฿'+o.total+(cancelled?'</s> ❌':'')+'</td>';
+    h+='<td>'+(cancelled?'<span style="font-size:10px;color:#C0392B">ยกเลิกแล้ว</span>':'<button class="o-cancel" onclick="cancelOrder(\''+o.no+'\',\''+o.date+'\')">ยกเลิก</button>')+'</td>';
+    h+='</tr>';
+  });
+  document.getElementById('oBody').innerHTML=h||'<tr><td colspan="7" style="text-align:center;color:#7A9A82;padding:12px;font-size:11px">ยังไม่มีออเดอร์</td></tr>';
 }
 
 function cancelOrder(no,date){
