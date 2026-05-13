@@ -408,6 +408,8 @@ font-family:-apple-system,sans-serif;white-space:nowrap}
 ::-webkit-scrollbar-thumb{background:#C8E8CC;border-radius:6px}
 </style>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
 </head>
 <body>
 
@@ -443,10 +445,12 @@ font-family:-apple-system,sans-serif;white-space:nowrap}
   </div>
   <div id="dashNav">
     <button class="dnb on" onclick="gdv('overview',this)">📊 ภาพรวม</button>
+    <button class="dnb" onclick="gdv('monthly',this)">📅 รายเดือน</button>
     <button class="dnb" onclick="gdv('pl',this)">💰 P&amp;L</button>
     <button class="dnb" onclick="gdv('orders',this)">🧾 ออเดอร์</button>
     <button class="dnb" onclick="gdv('menu',this)">🍜 เมนู</button>
     <button class="dnb" onclick="gdv('stock',this)">📦 สต็อก</button>
+    <button class="dnb" onclick="gdv('settings',this)">⚙️ ตั้งค่า</button>
   </div>
   <button id="modeBtn" onclick="openDashPin()">📊</button>
   <div id="syncDot"></div>
@@ -505,9 +509,26 @@ font-family:-apple-system,sans-serif;white-space:nowrap}
     <div class="sr"><span>รายการ</span><span id="sCnt">0 รายการ</span></div>
     <div class="sr"><span>ช่องทาง</span><span id="sCh">หน้าร้าน</span></div>
     <div class="sr tot"><span>รวม</span><span id="sTot">฿0</span></div>
+    <!-- ส่วนลด -->
+    <div style="display:flex;align-items:center;gap:6px;margin:6px 0">
+      <span style="font-size:11px;color:#7A9A82;flex-shrink:0">ส่วนลด:</span>
+      <input id="discInput" type="number" min="0" placeholder="0" style="width:70px;padding:5px 8px;border:1.5px solid #C8E8CC;border-radius:7px;font-size:12px;color:#1A3528;outline:none;text-align:center" oninput="applyDisc()">
+      <div class="prow" style="flex:1;margin:0;gap:4px">
+        <button class="pb" id="discBath" onclick="setDiscMode('bath')" style="padding:5px;font-size:11px">฿ บาท</button>
+        <button class="pb on" id="discPct" onclick="setDiscMode('pct')" style="padding:5px;font-size:11px">% เปอร์เซ็นต์</button>
+      </div>
+    </div>
+    <div class="sr" id="discRow" style="display:none;color:#C0392B"><span>ส่วนลด</span><span id="discAmt">-฿0</span></div>
+    <div class="sr tot" id="netRow" style="display:none"><span>ยอดสุทธิ</span><span id="sNet">฿0</span></div>
     <div class="prow">
       <button class="pb on" id="pbCash" onclick="selPay('cash')">💵 เงินสด</button>
       <button class="pb" id="pbQr" onclick="selPay('qr')">📱 QR/โอน</button>
+    </div>
+    <!-- QR พร้อมเพย์ (ถ้าตั้งค่าไว้) -->
+    <div id="qrPayBox" style="display:none;text-align:center;margin-bottom:10px;padding:12px;background:#EEF8F2;border-radius:12px;border:1px solid #C8E8CC">
+      <div style="font-size:12px;font-weight:700;color:#1B6B3A;margin-bottom:8px">สแกนจ่าย พร้อมเพย์</div>
+      <canvas id="qrPayCanvas" width="160" height="160" style="border:3px solid #C8E8CC;border-radius:10px"></canvas>
+      <div style="font-size:14px;font-weight:800;color:#1B6B3A;margin-top:8px" id="qrPayAmt"></div>
     </div>
     <button class="cfm" id="cfm" onclick="confirmOrder()" disabled>✅ ยืนยันออเดอร์</button>
   </div>
@@ -556,7 +577,41 @@ font-family:-apple-system,sans-serif;white-space:nowrap}
   <div class="sec"><div class="sec-t">🍜 จัดการเมนู<button class="add-btn" onclick="openMnMod()">+ เพิ่ม</button></div><div class="mn-grid" id="mnGrid"></div></div>
 </div>
 
-<div class="dv" id="vstock">
+<div class="dv" id="vmonthly">
+  <div class="pbar">
+    <button class="prb on" id="mthPrev" onclick="chgMonth(-1)">‹ เดือนก่อน</button>
+    <div style="flex:2;text-align:center;font-size:13px;font-weight:700;color:#1B6B3A;padding:8px 0" id="mthLabel">—</div>
+    <button class="prb" id="mthNext" onclick="chgMonth(1)">เดือนหน้า ›</button>
+  </div>
+  <div class="sgrd" id="mthStats"></div>
+  <div class="sec"><div class="sec-t">📈 ยอดขายรายวัน</div><div id="mthChart" style="padding:4px 0"></div></div>
+  <div class="sec"><div class="sec-t">🏆 สินค้าขายดีเดือนนี้</div><div id="mthTop"></div></div>
+  <div class="sec"><div class="sec-t" id="mthCmpTitle">เปรียบเทียบกับเดือนก่อน</div><div id="mthCmp"></div></div>
+</div>
+
+<div class="dv" id="vsettings">
+  <div class="sec">
+    <div class="sec-t">⚙️ ตั้งค่าร้าน</div>
+    <div class="f-row"><label class="f-lbl">ชื่อร้าน</label><input class="f-in" id="cfgName" placeholder="ก๋วยเตี๋ยวฮิมคือ"></div>
+    <div class="f-row"><label class="f-lbl">PIN Dashboard</label><input class="f-in" id="cfgPin" type="number" placeholder="9999" maxlength="4"></div>
+    <button class="add-btn" style="width:100%;padding:11px;font-size:13px;margin-top:4px" onclick="saveSettings()">💾 บันทึกตั้งค่า</button>
+  </div>
+  <div class="sec">
+    <div class="sec-t">📱 QR พร้อมเพย์</div>
+    <div style="font-size:11px;color:#5A8C6A;margin-bottom:12px">ใส่เบอร์โทรหรือเลขบัตรประชาชนที่ผูกพร้อมเพย์ไว้ เพื่อให้ลูกค้าสแกนจ่ายได้</div>
+    <div class="f-row"><label class="f-lbl">เบอร์โทร / เลขบัตร</label><input class="f-in" id="cfgPromptpay" placeholder="0812345678" type="tel"></div>
+    <div id="qrPreview" style="display:none;text-align:center;margin-top:12px">
+      <div style="font-size:11px;color:#5A8C6A;margin-bottom:8px">ตัวอย่าง QR (ไม่มียอด)</div>
+      <canvas id="qrCanvas" width="180" height="180" style="border:3px solid #C8E8CC;border-radius:12px"></canvas>
+    </div>
+    <button class="add-btn" style="width:100%;padding:11px;font-size:13px;margin-top:8px" onclick="savePromptpay()">💾 บันทึก + แสดง QR</button>
+  </div>
+  <div class="sec">
+    <div class="sec-t">🗑 ล้างข้อมูล</div>
+    <div style="font-size:11px;color:#C0392B;margin-bottom:10px">⚠️ ล้างเฉพาะ localStorage ในเครื่องนี้ ข้อมูลใน Sheets ไม่หาย</div>
+    <button onclick="clearLocalData()" style="width:100%;padding:11px;background:none;border:1.5px solid #C0392B;border-radius:10px;font-size:12px;font-weight:700;color:#C0392B;cursor:pointer">ล้างข้อมูลในเครื่อง</button>
+  </div>
+</div>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;flex-shrink:0">
     <div><div style="font-size:15px;font-weight:700;color:#1B6B3A">📦 สต็อก</div><div style="font-size:10px;color:#7A9A82" id="stTime"></div></div>
     <div style="display:flex;gap:6px;align-items:center"><div id="wPill" style="display:none;background:#FDECEA;color:#C0392B;padding:4px 10px;border-radius:7px;font-size:10px;font-weight:700">⚠️ <span id="wNum">0</span></div><button class="add-btn" onclick="openAddSt()">+ เพิ่ม</button></div>
@@ -1010,7 +1065,15 @@ function rCart(){
 }
 function selPay(m){pay=m;document.getElementById('pbCash').classList.toggle('on',m==='cash');document.getElementById('pbQr').classList.toggle('on',m==='qr');}
 function openSheet(){document.getElementById('sbd').classList.add('on');document.getElementById('sheet').classList.add('on');}
-function closeSheet(){document.getElementById('sbd').classList.remove('on');document.getElementById('sheet').classList.remove('on');}
+function closeSheet(){
+  document.getElementById('sbd').classList.remove('on');
+  document.getElementById('sheet').classList.remove('on');
+  // reset discount
+  discVal=0;document.getElementById('discInput').value='';
+  document.getElementById('discRow').style.display='none';
+  document.getElementById('netRow').style.display='none';
+  document.getElementById('qrPayBox').style.display='none';
+}
 
 /* PICKER */
 function openPK(m){
@@ -1098,7 +1161,7 @@ function pushCartEx(m,sb,finalPrice,details){
 function confirmOrder(){
   if(!cart.length)return;
   ordNo++;lsS('ordno',ordNo);
-  var tot=0;cart.forEach(function(c){tot+=c.pr*c.qty;});
+  var tot=calcNet(); // ใช้ยอดสุทธิหลังหักส่วนลด
   var n=new Date();
   var order={no:ordNo,channel:ch,pay:pay,total:tot,
     date:n.toISOString().slice(0,10),
@@ -1125,7 +1188,15 @@ function confirmOrder(){
 /* DASHBOARD */
 function sp(p,btn){period=p;document.querySelectorAll('.prb').forEach(function(b){b.classList.remove('on');});btn.classList.add('on');rDash();}
 function gdv(id,btn){activeDV=id;document.querySelectorAll('.dv').forEach(function(v){v.classList.remove('on');});document.querySelectorAll('.dnb').forEach(function(b){b.classList.remove('on');});document.getElementById('v'+id).classList.add('on');btn.classList.add('on');rDash();}
-function rDash(){if(activeDV==='overview')rOV();else if(activeDV==='pl')rPL();else if(activeDV==='orders')rOR();else if(activeDV==='menu')rMD();else if(activeDV==='stock')rSD();}
+function rDash(){
+  if(activeDV==='overview')rOV();
+  else if(activeDV==='monthly')rMonthly();
+  else if(activeDV==='pl')rPL();
+  else if(activeDV==='orders')rOR();
+  else if(activeDV==='menu')rMD();
+  else if(activeDV==='stock')rSD();
+  else if(activeDV==='settings')rSettings();
+}
 function dRange(){
   var n=new Date(),to=n.toISOString().slice(0,10),fr;
   if(period==='day'){fr=to;}
@@ -1603,7 +1674,190 @@ function toast(ic,msg,c){
   setTimeout(function(){t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},300);},3000);
 }
 
-/* BOOT */
+/* DISCOUNT */
+var discMode='pct',discVal=0;
+function setDiscMode(m){
+  discMode=m;
+  document.getElementById('discBath').classList.toggle('on',m==='bath');
+  document.getElementById('discPct').classList.toggle('on',m==='pct');
+  applyDisc();
+}
+function applyDisc(){
+  var v=parseFloat(document.getElementById('discInput').value)||0;
+  discVal=v;
+  var tot=0;cart.forEach(function(c){tot+=c.pr*c.qty;});
+  var disc=discMode==='pct'?Math.round(tot*v/100):v;
+  var net=Math.max(0,tot-disc);
+  document.getElementById('discRow').style.display=disc>0?'':'none';
+  document.getElementById('netRow').style.display=disc>0?'':'none';
+  document.getElementById('discAmt').textContent='-฿'+disc.toLocaleString();
+  document.getElementById('sNet').textContent='฿'+net.toLocaleString();
+  // update QR ถ้าเปิดอยู่
+  if(pay==='qr')updateQRPay(net);
+}
+function calcNet(){
+  var tot=0;cart.forEach(function(c){tot+=c.pr*c.qty;});
+  var disc=discMode==='pct'?Math.round(tot*discVal/100):discVal;
+  return Math.max(0,tot-disc);
+}
+
+/* QR PROMPTPAY */
+function selPay(m){
+  pay=m;
+  document.getElementById('pbCash').classList.toggle('on',m==='cash');
+  document.getElementById('pbQr').classList.toggle('on',m==='qr');
+  var pp=lsG('promptpay');
+  var box=document.getElementById('qrPayBox');
+  if(m==='qr'&&pp){
+    box.style.display='block';
+    updateQRPay(calcNet());
+  } else {
+    box.style.display='none';
+  }
+}
+function updateQRPay(amount){
+  var pp=lsG('promptpay');if(!pp)return;
+  document.getElementById('qrPayAmt').textContent='฿'+amount.toLocaleString();
+  var payload=genPromptPayPayload(pp,amount);
+  var canvas=document.getElementById('qrPayCanvas');
+  var ctx=canvas.getContext('2d');ctx.clearRect(0,0,160,160);
+  try{
+    new QRCode(canvas,{text:payload,width:160,height:160,correctLevel:QRCode.CorrectLevel.M});
+  }catch(e){
+    ctx.fillStyle='#7A9A82';ctx.font='11px sans-serif';ctx.fillText('QR lib loading...',10,80);
+  }
+}
+function genPromptPayPayload(target,amount){
+  // PromptPay QR payload (EMV format)
+  var num=target.replace(/[^0-9]/g,'');
+  var targetId=num.length>=13?'0213'+num:'0113'+num;
+  var merchantInfo='0016A000000677010111'+targetId;
+  var amtStr=amount>0?('54'+('0'+amount.toFixed(2).length.toString(16)).slice(-2)+amount.toFixed(2)):'';
+  var payload='000201010211'+('0'+(merchantInfo.length).toString(16)).slice(-2)+merchantInfo+'5303764'+amtStr+'5802TH';
+  payload+='6304';
+  payload+=crc16(payload);
+  return payload;
+}
+function crc16(str){
+  var crc=0xFFFF;
+  for(var i=0;i<str.length;i++){crc^=str.charCodeAt(i)<<8;for(var j=0;j<8;j++){crc=(crc&0x8000)?(crc<<1)^0x1021:(crc<<1);}}
+  crc&=0xFFFF;
+  return ('000'+crc.toString(16).toUpperCase()).slice(-4);
+}
+
+/* SETTINGS */
+function rSettings(){
+  document.getElementById('cfgName').value=lsG('storeName')||'ก๋วยเตี๋ยวฮิมคือ';
+  document.getElementById('cfgPin').value=PIN||'9999';
+  document.getElementById('cfgPromptpay').value=lsG('promptpay')||'';
+}
+function saveSettings(){
+  var name=document.getElementById('cfgName').value.trim();
+  var pin=document.getElementById('cfgPin').value.trim();
+  if(name){lsS('storeName',name);document.getElementById('storeName').textContent='🍜 '+name;}
+  if(pin&&pin.length===4){PIN=pin;lsS('pin',pin);}
+  toast('✅','บันทึกตั้งค่าแล้ว','g');
+}
+function savePromptpay(){
+  var pp=document.getElementById('cfgPromptpay').value.trim().replace(/[^0-9]/g,'');
+  if(!pp){toast('❌','ใส่เบอร์หรือเลขบัตร','r');return;}
+  lsS('promptpay',pp);
+  document.getElementById('qrPreview').style.display='block';
+  var canvas=document.getElementById('qrCanvas');
+  canvas.getContext('2d').clearRect(0,0,180,180);
+  try{
+    new QRCode(canvas,{text:genPromptPayPayload(pp,0),width:180,height:180,correctLevel:QRCode.CorrectLevel.M});
+  }catch(e){}
+  toast('✅','บันทึก QR พร้อมเพย์แล้ว','g');
+}
+function clearLocalData(){
+  if(!confirm('ล้างข้อมูลในเครื่องนี้? (ข้อมูลใน Sheets ไม่หาย)'))return;
+  var keys=['menu','stock','orders','expenses','ordno','pin','menuOpts','optsVer','promptpay','storeName'];
+  keys.forEach(function(k){localStorage.removeItem('hk_'+k);});
+  toast('✅','ล้างแล้ว รีโหลดหน้าเว็บ','g');
+  setTimeout(function(){location.reload();},2000);
+}
+
+/* MONTHLY REPORT */
+var mthYear=new Date().getFullYear();
+var mthMonth=new Date().getMonth()+1;
+function chgMonth(d){
+  mthMonth+=d;
+  if(mthMonth>12){mthMonth=1;mthYear++;}
+  if(mthMonth<1){mthMonth=12;mthYear--;}
+  rMonthly();
+}
+function rMonthly(){
+  var y=mthYear,m=mthMonth;
+  var label=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  document.getElementById('mthLabel').textContent=label[m-1]+' '+( y+543);
+  var from=y+'-'+('0'+m).slice(-2)+'-01';
+  var lastDay=new Date(y,m,0).getDate();
+  var to=y+'-'+('0'+m).slice(-2)+'-'+lastDay;
+  document.getElementById('mthStats').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:12px;color:#7A9A82;font-size:12px">⏳ กำลังโหลด...</div>';
+
+  callApi({action:'getOrders',from:from,to:to},function(err,res){
+    var os=[];
+    if(res&&res.ok&&res.data){os=res.data.filter(function(o){return !o.cancelled;});}
+    else{os=(lsG('orders')||[]).filter(function(o){return o.date>=from&&o.date<=to&&!o.cancelled;});}
+
+    var tot=0,cnt=os.length,best=0,bestDay='';
+    var dayMap={};
+    os.forEach(function(o){
+      tot+=o.total;
+      if(!dayMap[o.date])dayMap[o.date]=0;
+      dayMap[o.date]+=o.total;
+    });
+    Object.keys(dayMap).forEach(function(d){if(dayMap[d]>best){best=dayMap[d];bestDay=d;}});
+    var avg=cnt?Math.round(tot/cnt):0;
+
+    document.getElementById('mthStats').innerHTML=
+      mSt('💰','ยอดรวม','฿'+tot.toLocaleString(),'g','')+
+      mSt('📋','ออเดอร์',cnt+' ออเดอร์','gr','')+
+      mSt('🧠','เฉลี่ย/ออเดอร์','฿'+avg,'b','')+
+      mSt('⭐','วันขายดีสุด',bestDay?bestDay.slice(8)+'/'+bestDay.slice(5,7)+' ฿'+best.toLocaleString():'—','r','');
+
+    // กราฟแท่งรายวัน
+    var maxV=Math.max.apply(null,Object.keys(dayMap).map(function(k){return dayMap[k];}))||1;
+    var bars='<div style="display:flex;align-items:flex-end;gap:2px;height:80px;overflow-x:auto;padding-bottom:4px">';
+    for(var d=1;d<=lastDay;d++){
+      var dk=y+'-'+('0'+m).slice(-2)+'-'+('0'+d).slice(-2);
+      var v=dayMap[dk]||0;
+      var pct=Math.round(v/maxV*100);
+      var isPeak=dk===bestDay;
+      bars+='<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;min-width:18px">'+
+        '<div style="width:14px;background:'+(isPeak?'#2E8B57':'#C8F0D8')+';border-radius:3px 3px 0 0;height:'+Math.max(pct,v>0?4:0)+'%;"></div>'+
+        '<div style="font-size:8px;color:#7A9A82">'+d+'</div></div>';
+    }
+    bars+='</div>';
+    document.getElementById('mthChart').innerHTML=bars;
+
+    // Top สินค้า
+    var sm={};
+    os.forEach(function(o){o.items.forEach(function(it){if(!sm[it.name])sm[it.name]=0;sm[it.name]+=it.qty;});});
+    var top=Object.keys(sm).map(function(k){return{nm:k,qty:sm[k]};}).sort(function(a,b){return b.qty-a.qty;}).slice(0,5);
+    var md=['🥇','🥈','🥉'],th='';
+    top.forEach(function(t,i){th+='<div class="titem"><div class="ti-r">'+(md[i]||i+1)+'</div><div class="ti-e">🍜</div><div class="ti-n">'+t.nm+'</div><div class="ti-c">x'+t.qty+'</div></div>';});
+    document.getElementById('mthTop').innerHTML=th||'<div style="text-align:center;color:#7A9A82;font-size:12px;padding:10px">ยังไม่มีข้อมูล</div>';
+
+    // เปรียบเทียบเดือนก่อน
+    var pm=m-1,py=y;if(pm<1){pm=12;py--;}
+    var pfrom=py+'-'+('0'+pm).slice(-2)+'-01';
+    var pto=py+'-'+('0'+pm).slice(-2)+'-'+new Date(py,pm,0).getDate();
+    var plabel=label[pm-1]+' '+(py+543);
+    document.getElementById('mthCmpTitle').textContent='เปรียบเทียบกับ '+plabel;
+    callApi({action:'getOrders',from:pfrom,to:pto},function(e2,r2){
+      var pos=[];
+      if(r2&&r2.ok&&r2.data){pos=r2.data.filter(function(o){return !o.cancelled;});}
+      var ptot=0;pos.forEach(function(o){ptot+=o.total;});
+      var diff=tot-ptot;var pct2=ptot>0?Math.round(diff/ptot*100):0;
+      document.getElementById('mthCmp').innerHTML=
+        '<div class="sum-row"><span>เดือนนี้ ('+label[m-1]+')</span><span style="font-weight:700;color:#1B6B3A">฿'+tot.toLocaleString()+'</span></div>'+
+        '<div class="sum-row"><span>เดือนก่อน ('+plabel+')</span><span style="font-weight:700;color:#7A9A82">฿'+ptot.toLocaleString()+'</span></div>'+
+        '<div class="sum-row big"><span>เปลี่ยนแปลง</span><span style="color:'+(diff>=0?'#1B6B3A':'#C0392B')+'">'+(diff>=0?'+':'')+' ฿'+diff.toLocaleString()+' ('+(pct2>=0?'+':'')+pct2+'%)</span></div>';
+    });
+  });
+}
 initData();
 bCats();
 rMenu();
