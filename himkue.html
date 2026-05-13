@@ -1391,32 +1391,58 @@ function saveSt(){
 
 /* SUMMARY */
 function openSum(){
-  var today=new Date().toISOString().slice(0,10);
-  var os=orders.filter(function(o){return o.date===today;});
-  var tot=0,cnt=os.length,wt=0,lt=0,gt=0;
-  var topMap={};
-  os.forEach(function(o){
-    tot+=o.total;
-    if(o.channel==='walkin')wt+=o.total;
-    else if(o.channel==='lineman')lt+=o.total;
-    else if(o.channel==='grab')gt+=o.total;
-    o.items.forEach(function(it){if(!topMap[it.name])topMap[it.name]=0;topMap[it.name]+=it.qty;});
-  });
-  var avg=cnt?Math.round(tot/cnt):0;
-  var top=Object.keys(topMap).map(function(k){return{nm:k,qty:topMap[k]};}).sort(function(a,b){return b.qty-a.qty;}).slice(0,5);
-  var md=['🥇','🥈','🥉','4️⃣','5️⃣'];
-  var h='<div class="sum-row big"><span>ยอดรวมวันนี้</span><span>฿'+tot.toLocaleString()+'</span></div>';
-  h+='<div class="sum-row"><span>ออเดอร์</span><span style="font-weight:700">'+cnt+' ออเดอร์</span></div>';
-  h+='<div class="sum-row"><span>เฉลี่ย/ออเดอร์</span><span style="font-weight:700">฿'+avg+'</span></div>';
-  h+='<div class="sum-sec-lbl">แยกช่องทาง</div><div class="sum-chips">';
-  if(wt)h+='<div class="sum-chip walkin">🏪 หน้าร้าน ฿'+wt.toLocaleString()+'</div>';
-  if(lt)h+='<div class="sum-chip lineman">🟢 LINE MAN ฿'+lt.toLocaleString()+'</div>';
-  if(gt)h+='<div class="sum-chip grab">🟢 Grab ฿'+gt.toLocaleString()+'</div>';
-  if(!cnt)h+='<div style="font-size:12px;color:#7A9A82">ยังไม่มีออเดอร์วันนี้</div>';
-  h+='</div>';
-  if(top.length){h+='<div class="sum-sec-lbl">ขายดีวันนี้</div>';top.forEach(function(t,i){h+='<div class="sum-row"><span>'+md[i]+' '+t.nm+'</span><span style="font-weight:700;color:#1B6B3A">x'+t.qty+'</span></div>';});}
-  document.getElementById('sumContent').innerHTML=h;
   document.getElementById('sumMod').classList.add('on');
+  document.getElementById('sumContent').innerHTML='<div style="text-align:center;padding:20px;color:#7A9A82;font-size:12px">⏳ กำลังโหลด...</div>';
+  var today=new Date().toISOString().slice(0,10);
+
+  function renderSum(allOrders){
+    // กรองเฉพาะวันนี้ และไม่รวมที่ยกเลิก
+    var os=allOrders.filter(function(o){return o.date===today&&!o.cancelled;});
+    var tot=0,cnt=os.length,wt=0,lt=0,gt=0;
+    var topMap={};
+    os.forEach(function(o){
+      tot+=o.total;
+      if(o.channel==='walkin')wt+=o.total;
+      else if(o.channel==='lineman')lt+=o.total;
+      else if(o.channel==='grab')gt+=o.total;
+      o.items.forEach(function(it){if(!topMap[it.name])topMap[it.name]=0;topMap[it.name]+=it.qty;});
+    });
+    var avg=cnt?Math.round(tot/cnt):0;
+    var top=Object.keys(topMap).map(function(k){return{nm:k,qty:topMap[k]};}).sort(function(a,b){return b.qty-a.qty;}).slice(0,5);
+    var md=['🥇','🥈','🥉','4️⃣','5️⃣'];
+    var h='<div class="sum-row big"><span>ยอดรวมวันนี้</span><span>฿'+tot.toLocaleString()+'</span></div>';
+    h+='<div class="sum-row"><span>ออเดอร์</span><span style="font-weight:700">'+cnt+' ออเดอร์</span></div>';
+    h+='<div class="sum-row"><span>เฉลี่ย/ออเดอร์</span><span style="font-weight:700">฿'+avg+'</span></div>';
+    h+='<div class="sum-sec-lbl">แยกช่องทาง</div><div class="sum-chips">';
+    if(wt)h+='<div class="sum-chip walkin">🏪 หน้าร้าน ฿'+wt.toLocaleString()+'</div>';
+    if(lt)h+='<div class="sum-chip lineman">🟢 LINE MAN ฿'+lt.toLocaleString()+'</div>';
+    if(gt)h+='<div class="sum-chip grab">🟢 Grab ฿'+gt.toLocaleString()+'</div>';
+    if(!cnt)h+='<div style="font-size:12px;color:#7A9A82">ยังไม่มีออเดอร์วันนี้</div>';
+    h+='</div>';
+    if(top.length){
+      h+='<div class="sum-sec-lbl">ขายดีวันนี้</div>';
+      top.forEach(function(t,i){h+='<div class="sum-row"><span>'+md[i]+' '+t.nm+'</span><span style="font-weight:700;color:#1B6B3A">x'+t.qty+'</span></div>';});
+    }
+    document.getElementById('sumContent').innerHTML=h;
+  }
+
+  // แสดง local ก่อน
+  var localOrders=lsG('orders')||[];
+  renderSum(localOrders);
+  // sync จาก Sheets แล้ว re-render
+  callApi({action:'getOrders',from:today,to:today},function(err,res){
+    if(res&&res.ok&&res.data){
+      // merge cancelled status จาก Sheets เข้า local
+      var sheetsMap={};
+      res.data.forEach(function(o){sheetsMap[String(o.no)]=o.cancelled;});
+      var merged=localOrders.map(function(o){
+        if(sheetsMap[String(o.no)]!==undefined)o.cancelled=sheetsMap[String(o.no)];
+        return o;
+      });
+      lsS('orders',merged);
+      renderSum(merged);
+    }
+  });
 }
 function closeSum(){document.getElementById('sumMod').classList.remove('on');}
 
