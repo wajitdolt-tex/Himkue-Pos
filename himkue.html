@@ -961,18 +961,27 @@ function togOpt(el,key,si,oi,secName,lb,ex,priceMode){
 function closePK(){document.getElementById('pkbd').classList.remove('on');document.getElementById('pkbox').classList.remove('on');}
 function confirmPK(){
   var m=null;menu.forEach(function(x){if(x.id==pkId)m=x;});if(!m)return;
-  var opts=menuOpts[m.id]||[];
+  var side=(ch==='walkin')?'walkin':'online';
+  var mOpts=menuOpts[m.id]||DEFAULT_OPTS[m.id];
+  var opts=mOpts?(mOpts[side]||mOpts.walkin||[]):[];
   if(opts.length){
     var parts=[];var extraAdd=0;var fixedPrice=null;
-    Object.keys(pkOpts).sort().forEach(function(k){
+    // เรียง key ตาม section index ให้ถูกต้อง
+    Object.keys(pkOpts).sort(function(a,b){
+      var sa=pkOpts[a].sec,sb2=pkOpts[b].sec;
+      return sa!==sb2?sa-sb2:pkOpts[a].oi-pkOpts[b].oi;
+    }).forEach(function(k){
       var o=pkOpts[k];
       parts.push(o.lb);
-      if(o.priceMode==='fixed'&&o.type==='radio'){fixedPrice=o.ex;}
-      else{extraAdd+=o.ex;}
+      if(o.priceMode==='fixed'&&o.type==='radio'){
+        fixedPrice=Number(o.ex)||0;
+      } else {
+        extraAdd+=Number(o.ex)||0;
+      }
     });
     var sb=parts.join(', ');
     var finalPrice=(fixedPrice!==null?fixedPrice:gp(m))+extraAdd;
-    pushCartEx(m,sb,finalPrice-gp(m)); // pass diff
+    pushCartEx(m,sb,finalPrice);
   } else {
     pushCart(m,'','');
   }
