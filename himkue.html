@@ -1579,16 +1579,36 @@ function openSum(){
       });
     });
 
-    var h='';
     // ยอดรวม
     h+='<div class="sum-row big"><span>ยอดรวมวันนี้</span><span>฿'+tot.toLocaleString()+'</span></div>';
     h+='<div class="sum-row"><span>ออเดอร์</span><span style="font-weight:700">'+cnt+' ออเดอร์</span></div>';
-    // ช่องทาง
+
+    // แยกยอดตามช่องทางชำระเงิน
+    var cash=0,qr=0;
+    os.forEach(function(o){if(o.pay==='cash')cash+=o.total;else qr+=o.total;});
+    h+='<div class="sum-sec-lbl">ยอดแยกตามการชำระ</div>';
+    h+='<div style="background:#EEF8F2;border-radius:10px;overflow:hidden;border:1px solid #C8E8CC;margin-bottom:8px">';
+    if(cash)h+='<div style="display:flex;justify-content:space-between;padding:9px 12px;border-bottom:1px solid #D0F0DC">'+
+      '<span style="font-size:13px;display:flex;align-items:center;gap:6px">💵 <b>เงินสด</b></span>'+
+      '<span style="font-size:15px;font-weight:800;color:#1B6B3A">฿'+cash.toLocaleString()+'</span></div>';
+    if(qr)h+='<div style="display:flex;justify-content:space-between;padding:9px 12px">'+
+      '<span style="font-size:13px;display:flex;align-items:center;gap:6px">📱 <b>QR / โอน</b></span>'+
+      '<span style="font-size:15px;font-weight:800;color:#1B6B3A">฿'+qr.toLocaleString()+'</span></div>';
+    h+='</div>';
+
+    // แยกยอดตามช่องทางขาย
     if(wt||lt||gt){
-      h+='<div class="sum-sec-lbl">แยกช่องทาง</div><div class="sum-chips">';
-      if(wt)h+='<div class="sum-chip walkin">🏪 หน้าร้าน ฿'+wt.toLocaleString()+'</div>';
-      if(lt)h+='<div class="sum-chip lineman">🟢 LINE MAN ฿'+lt.toLocaleString()+'</div>';
-      if(gt)h+='<div class="sum-chip grab">🟢 Grab ฿'+gt.toLocaleString()+'</div>';
+      h+='<div class="sum-sec-lbl">ยอดแยกตามช่องทางขาย</div>';
+      h+='<div style="background:#EEF8F2;border-radius:10px;overflow:hidden;border:1px solid #C8E8CC;margin-bottom:8px">';
+      if(wt)h+='<div style="display:flex;justify-content:space-between;padding:9px 12px;border-bottom:1px solid #D0F0DC">'+
+        '<span style="font-size:13px;display:flex;align-items:center;gap:6px">🏪 <b>หน้าร้าน</b></span>'+
+        '<span style="font-size:15px;font-weight:800;color:#1B6B3A">฿'+wt.toLocaleString()+'</span></div>';
+      if(lt)h+='<div style="display:flex;justify-content:space-between;padding:9px 12px;border-bottom:1px solid #D0F0DC">'+
+        '<span style="font-size:13px;display:flex;align-items:center;gap:6px">🟢 <b>LINE MAN</b></span>'+
+        '<span style="font-size:15px;font-weight:800;color:#1B6B3A">฿'+lt.toLocaleString()+'</span></div>';
+      if(gt)h+='<div style="display:flex;justify-content:space-between;padding:9px 12px">'+
+        '<span style="font-size:13px;display:flex;align-items:center;gap:6px">🟢 <b>Grab</b></span>'+
+        '<span style="font-size:15px;font-weight:800;color:#1B6B3A">฿'+gt.toLocaleString()+'</span></div>';
       h+='</div>';
     }
 
